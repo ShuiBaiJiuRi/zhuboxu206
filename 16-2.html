@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16-2 · JavaScript 数组方法实验室（交互演示）</title>
+<style>
+  :root {
+    --bg-1: #07111f;
+    --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc;
+    --muted: #9bb0c9;
+    --blue: #60a5fa;
+    --cyan: #67e8f9;
+    --purple: #a78bfa;
+    --pink: #f9a8d4;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+
+  body { display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px 80px; }
+
+  .page {
+    width: min(1240px, 100%);
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative;
+    padding: 50px 48px 28px;
+    background:
+      linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)),
+      rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: 0.8;
+  }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: 800; font-size: 24px; color: #08111d;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.7rem, 2.5vw, 2.6rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 880px; color: var(--muted); line-height: 1.8; }
+  .hero .sub b { color: var(--cyan); }
+  .back-link {
+    position: relative; z-index: 1; display: inline-block; margin-top: 12px;
+    color: var(--cyan); text-decoration: none; font-size: 0.88rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .back-link:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+
+  /* ---------- 布局 ---------- */
+  .lab { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 18px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .panel h2 .step {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 800; color: #08111d;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+  }
+  .hint { color: var(--muted); font-size: 0.8rem; line-height: 1.7; margin: 0 0 10px; }
+
+  /* ---------- 表单控件 ---------- */
+  input[type=text] {
+    width: 100%; padding: 9px 11px; border-radius: 10px;
+    background: rgba(2, 6, 23, 0.55); border: 1px solid var(--line);
+    color: var(--text); font-family: "Cascadia Code", "Consolas", monospace; font-size: 0.85rem;
+    outline: none;
+  }
+  input[type=text]:focus { border-color: rgba(103, 232, 249, 0.45); }
+
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 7px 12px; border-radius: 10px; font-size: 0.82rem; transition: all 0.18s ease;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary {
+    border-color: transparent; color: #08111d; font-weight: 800;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    box-shadow: 0 10px 22px rgba(103, 232, 249, 0.22);
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    cursor: pointer; border: 1px solid var(--line); color: var(--muted);
+    background: rgba(148, 163, 184, 0.06); padding: 6px 12px; border-radius: 999px; font-size: 0.8rem;
+    transition: all 0.18s ease;
+  }
+  .chip:hover { color: var(--text); border-color: rgba(103, 232, 249, 0.35); }
+  .chip.on { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 700; }
+
+  /* ---------- 方法列表 ---------- */
+  .m-group { margin-bottom: 12px; }
+  .m-group .gt { font-size: 0.75rem; color: var(--muted); margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
+  .m-group .gt::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .m-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .m {
+    cursor: pointer; padding: 6px 11px; border-radius: 10px; font-size: 0.82rem;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    border: 1px solid var(--line); background: rgba(148, 163, 184, 0.06); color: var(--muted);
+    transition: all 0.18s ease;
+  }
+  .m:hover { color: var(--text); border-color: rgba(103, 232, 249, 0.35); }
+  .m.on {
+    color: #08111d; font-weight: 800; border-color: transparent;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+  }
+
+  /* ---------- 演播台 ---------- */
+  .stage { padding-bottom: 16px; }
+  .row-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 0.78rem; color: var(--muted); margin-bottom: 7px;
+  }
+  .row-head .tag { font-size: 0.7rem; padding: 3px 9px; border-radius: 999px; }
+  .tag.keep { color: var(--green); background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.28); }
+  .tag.change { color: var(--red); background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.28); }
+
+  .row {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    min-height: 84px; padding: 14px 14px 12px;
+    background: rgba(8, 14, 26, 0.6); border: 1px solid var(--line); border-radius: 14px;
+  }
+  .row .empty { color: var(--muted); font-size: 0.85rem; }
+
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 5px; will-change: transform; }
+  .slot .idx { font-size: 0.68rem; color: var(--muted); font-family: "Cascadia Code", "Consolas", monospace; }
+  .cell {
+    --c: var(--blue);
+    min-width: 46px; height: 46px; padding: 0 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.95rem; color: #08111d;
+    background: var(--c); border-radius: 12px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.2s ease;
+    white-space: nowrap;
+  }
+  .cell.nested {
+    background: rgba(148, 163, 184, 0.08); color: var(--muted);
+    border: 1px dashed rgba(148, 163, 184, 0.4); box-shadow: none; font-weight: 700;
+    gap: 4px; padding: 0 8px;
+  }
+  .cell .mini {
+    min-width: 22px; height: 22px; padding: 0 4px; border-radius: 6px; font-style: normal;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 800; color: #08111d; background: var(--amber);
+  }
+
+  .slot.scan .cell { transform: translateY(-8px) scale(1.06); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 14px 24px rgba(0, 0, 0, 0.35); }
+  .slot.hit .cell { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.95), 0 14px 24px rgba(0, 0, 0, 0.35); }
+  .slot.miss .cell { opacity: 0.22; filter: grayscale(0.7); }
+  .slot.enter .cell { animation: enter 0.45s cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+  .slot.leave .cell { animation: leave 0.35s ease forwards; }
+
+  @keyframes enter { from { transform: scale(0.3) translateY(-14px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+  @keyframes leave { to { transform: scale(0.3) translateY(-20px); opacity: 0; } }
+
+  /* 传送带 */
+  .band {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    margin: 14px 0; padding: 12px 14px;
+    background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(167, 139, 250, 0.08));
+    border: 1px solid rgba(103, 232, 249, 0.22); border-radius: 14px;
+  }
+  .band .arrow { color: var(--cyan); font-size: 1.1rem; }
+  .band code {
+    flex: 1; min-width: 240px; font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 0.88rem; color: #cfe3ff; word-break: break-all;
+  }
+  .band code .fn { color: #82aaff; }
+  .band code .kw { color: #c792ea; }
+  .band code .str { color: #c3e88d; }
+  .band code .num { color: #f78c6c; }
+  .band code .cm { color: #5c6b82; }
+
+  .out { margin-top: 4px; }
+  .out .row { border-color: rgba(103, 232, 249, 0.28); background: rgba(6, 22, 32, 0.55); }
+
+  /* 结果区 */
+  .result { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
+  .box {
+    background: rgba(8, 14, 26, 0.6); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+  }
+  .box .k { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+  .box .v { font-family: "Cascadia Code", "Consolas", monospace; font-size: 1rem; color: var(--amber); word-break: break-all; }
+  .box.good { border-color: rgba(52, 211, 153, 0.3); }
+  .box.warn { border-color: rgba(251, 113, 133, 0.3); }
+  .box.good .v { color: var(--green); }
+  .box.warn .v { color: var(--red); }
+
+  .tray { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; min-height: 0; }
+  .tray .lab { font-size: 0.72rem; color: var(--muted); }
+  .tray .gone {
+    padding: 5px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+    color: var(--red); background: rgba(251, 113, 133, 0.1);
+    border: 1px dashed rgba(251, 113, 133, 0.4); text-decoration: line-through;
+  }
+
+  .note {
+    margin-top: 12px; padding: 10px 13px; border-radius: 12px; min-height: 40px;
+    background: rgba(2, 6, 23, 0.5); border: 1px dashed rgba(148, 163, 184, 0.25);
+    font-size: 0.84rem; color: var(--muted); font-family: "Cascadia Code", "Consolas", monospace;
+  }
+  .note b { color: var(--cyan); }
+
+  .log { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
+  .log li {
+    font-size: 0.82rem; color: var(--muted); line-height: 1.7; padding: 4px 0 4px 20px; position: relative;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    font-family: "Cascadia Code", "Consolas", monospace;
+  }
+  .log li::before { content: "›"; position: absolute; left: 4px; color: var(--cyan); }
+
+  /* ---------- 速查表 ---------- */
+  .sheet-wrap { margin-top: 22px; overflow-x: auto; }
+  table.sheet { width: 100%; border-collapse: collapse; min-width: 680px; }
+  table.sheet th, table.sheet td {
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 0.85rem;
+  }
+  table.sheet th { color: var(--cyan); font-weight: 700; font-size: 0.8rem; }
+  table.sheet td.mono { font-family: "Cascadia Code", "Consolas", monospace; color: var(--amber); white-space: nowrap; }
+  table.sheet tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+  .y { color: var(--red); font-weight: 700; }
+  .n { color: var(--green); font-weight: 700; }
+
+  .tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+  .tip { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .tip h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--cyan); }
+  .tip p { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.75; }
+  .tip code { color: var(--amber); font-family: "Cascadia Code", "Consolas", monospace; }
+
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 980px) {
+    .lab { grid-template-columns: 1fr; }
+    .hero, .content { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">[ ]</div>
+      <div>
+        <h1>JavaScript 数组方法实验室</h1>
+      </div>
+    </div>
+    <p class="sub">
+      数组就是一排带编号的小方块。左边<b>换素材</b>、<b>选方法</b>、<b>填参数</b>，右边点「运行」，
+      方块会自己<b>飞过来、跳出去、变个样</b>——一眼看懂每个方法到底干了什么、返回了什么、有没有动到原数组。
+    </p>
+    <a class="back-link" href="16-1.html">← 回到 16-1 方法速览</a>
+  </header>
+
+  <main class="content">
+    <div class="lab">
+      <!-- 左：控制台 -->
+      <div class="col">
+        <section class="panel">
+          <h2><span class="step">1</span>数组素材</h2>
+          <p class="hint">用逗号分隔；数字直接写，字符串加引号，嵌套数组写 <code>[1,2]</code>。</p>
+          <input type="text" id="arrInput" value="3, 1, 4, 1, 5, 9, 2, 6">
+          <div class="btn-row">
+            <button class="btn primary" id="applyInput">应用</button>
+            <button class="btn" id="randBtn">随机</button>
+            <button class="btn" id="shuffleBtn">打乱</button>
+            <button class="btn" id="clearBtn">清空</button>
+          </div>
+          <div class="chips" id="presets" style="margin-top:12px"></div>
+        </section>
+
+        <section class="panel">
+          <h2><span class="step">2</span>选择方法</h2>
+          <div id="methodList"></div>
+        </section>
+
+        <section class="panel">
+          <h2><span class="step">3</span>参数设置</h2>
+          <div id="args"></div>
+          <p class="hint" id="mDesc" style="margin:10px 0 0"></p>
+        </section>
+      </div>
+
+      <!-- 右：演播台 -->
+      <div class="col">
+        <section class="panel stage">
+          <h2><span class="step">4</span>演播台</h2>
+
+          <div class="row-head">
+            <span id="mainHead">原数组 arr</span>
+            <span class="tag keep" id="mainTag">当前状态</span>
+          </div>
+          <div class="row" id="mainRow"></div>
+
+          <div class="band">
+            <span class="arrow">➜</span>
+            <code id="bandCode"></code>
+            <button class="btn primary" id="runBtn">▶ 运行</button>
+          </div>
+
+          <div class="out" id="outWrap" hidden>
+            <div class="row-head"><span id="outHead">返回的新数组</span><span class="tag keep">arr 不变</span></div>
+            <div class="row" id="outRow"></div>
+          </div>
+
+          <div class="result">
+            <div class="box"><span class="k">返回值</span><span class="v" id="retVal">—</span></div>
+            <div class="box"><span class="k">返回值类型</span><span class="v" id="retType">—</span></div>
+            <div class="box" id="mutBox"><span class="k">对原数组的影响</span><span class="v" id="mutText">—</span></div>
+          </div>
+
+          <div class="tray" id="tray"></div>
+          <div class="note" id="note">准备好了就点「运行」▶</div>
+        </section>
+
+        <section class="panel">
+          <h2><span class="step">5</span>执行日志</h2>
+          <ol class="log" id="log"></ol>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel sheet-wrap">
+      <h2>方法速查表</h2>
+      <table class="sheet">
+        <thead>
+          <tr><th>方法</th><th>分类</th><th>作用</th><th>改变原数组</th><th>返回值</th></tr>
+        </thead>
+        <tbody id="sheetBody"></tbody>
+      </table>
+
+      <div class="tips">
+        <div class="tip">
+          <h3>sort 的坑</h3>
+          <p><code>sort()</code> 默认按<strong>字符串</strong>比较，<code>[10, 9].sort()</code> 会得到 <code>[10, 9]</code>。排数字请写 <code>sort((a, b) =&gt; a - b)</code>。</p>
+        </div>
+        <div class="tip">
+          <h3>slice vs splice</h3>
+          <p><code>slice</code> 是「切一片带走」，不改原数组；<code>splice</code> 是「动手术」，会直接修改原数组并返回被切掉的部分。</p>
+        </div>
+        <div class="tip">
+          <h3>想排序又不想改原数组</h3>
+          <p>先复制再排：<code>arr.slice().sort((a,b)=&gt;a-b)</code> 或 <code>[...arr].sort(...)</code>。</p>
+        </div>
+        <div class="tip">
+          <h3>链式调用</h3>
+          <p><code>filter → map → reduce</code> 是最常见三连：先筛选、再变形、最后汇总，全程不碰原数组。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 16-2 JavaScript 数组方法实验室</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   16-2 JavaScript 数组方法实验室
+   数组内部用 {id, v} 表示：id 用于动画追踪（FLIP），v 是真实值
+   ========================================================= */
+
+const PALETTE = ['#60a5fa', '#a78bfa', '#67e8f9', '#34d399', '#f9a8d4', '#fbbf24', '#fb7185'];
+const colorOf = id => PALETTE[id % PALETTE.length];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+let uid = 0;
+const mk = v => ({ id: ++uid, v });
+const V = list => list.map(o => o.v);
+const fmt = v => Array.isArray(v) ? '[' + v.join(', ') + ']' : String(v);
+const arrText = list => '[' + list.map(o => fmt(o.v)).join(', ') + ']';
+const litHTML = v => typeof v === 'number'
+  ? '<span class="num">' + v + '</span>'
+  : Array.isArray(v) ? '<span class="str">[' + v.join(', ') + ']</span>'
+  : '<span class="str">\'' + v + '\'</span>';
+const fmtRet = r => Array.isArray(r) ? '[' + r.join(', ') + ']'
+  : typeof r === 'string' ? '"' + r + '"'
+  : r === undefined ? 'undefined' : String(r);
+
+// 只按“最外层”的逗号切分，保证 [1,2] 不被拆坏
+function splitTop(s) {
+  const out = []; let depth = 0, cur = '';
+  for (const ch of String(s)) {
+    if (ch === '[') depth++;
+    if (ch === ']') depth--;
+    if (ch === ',' && depth === 0) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur);
+  return out.map(t => t.trim()).filter(t => t !== '');
+}
+function parseOne(s) {
+  s = String(s).trim();
+  if (s === '') return '';
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  if (s.startsWith('[')) { try { return JSON.parse(s); } catch (e) { return s; } }
+  if (s === 'true') return true;
+  if (s === 'false') return false;
+  return s.replace(/^['"]|['"]$/g, '');
+}
+const parseList = s => splitTop(s).map(parseOne);
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const mainRow = $('mainRow'), outRow = $('outRow'), outWrap = $('outWrap');
+const bandCode = $('bandCode'), runBtn = $('runBtn');
+const retVal = $('retVal'), retType = $('retType'), mutBox = $('mutBox'), mutText = $('mutText');
+const tray = $('tray'), noteEl = $('note'), logEl = $('log');
+const arrInput = $('arrInput'), argsBox = $('args'), methodList = $('methodList');
+
+/* ---------- 状态 ---------- */
+let state = { arr: parseList(arrInput.value).map(mk), methodId: 'push' };
+let busy = false;
+
+/* =========================================================
+   方法定义
+   args   : 参数输入项（list:true 表示按数组解析）
+   steps  : 可选的“逐步扫描”演示
+   apply  : 真正执行，返回 { ret, newArr? }
+   ========================================================= */
+const METHODS = [
+  /* ---------- 增删改（改变原数组） ---------- */
+  {
+    id: 'push', name: 'push()', cat: '增删改', mut: true, retType: 'number（新长度）',
+    desc: '在末尾追加一个元素，返回追加后的新长度。像排队时新来的人站到队尾。',
+    args: [{ key: 'v', label: '追加的值', def: '9' }],
+    code: a => 'arr.<span class="fn">push</span>(' + litHTML(a.v) + ')',
+    apply: (arr, a) => { arr.push(mk(a.v)); return { ret: arr.length }; }
+  },
+  {
+    id: 'pop', name: 'pop()', cat: '增删改', mut: true, retType: '被删除的元素 / undefined',
+    desc: '删除并返回最后一个元素。空数组调用返回 undefined。',
+    args: [],
+    code: () => '<span class="kw">const</span> last = arr.<span class="fn">pop</span>()',
+    apply: arr => { const r = arr.pop(); return { ret: r ? r.v : undefined }; }
+  },
+  {
+    id: 'unshift', name: 'unshift()', cat: '增删改', mut: true, retType: 'number（新长度）',
+    desc: '在开头插入元素，后面所有元素下标都要后移一位，返回新长度。',
+    args: [{ key: 'v', label: '插入的值', def: '7' }],
+    code: a => 'arr.<span class="fn">unshift</span>(' + litHTML(a.v) + ')',
+    apply: (arr, a) => { arr.unshift(mk(a.v)); return { ret: arr.length }; }
+  },
+  {
+    id: 'shift', name: 'shift()', cat: '增删改', mut: true, retType: '被删除的元素 / undefined',
+    desc: '删除并返回第一个元素，后面的元素整体前移。和 push 搭配就是队列。',
+    args: [],
+    code: () => '<span class="kw">const</span> first = arr.<span class="fn">shift</span>()',
+    apply: arr => { const r = arr.shift(); return { ret: r ? r.v : undefined }; }
+  },
+  {
+    id: 'splice', name: 'splice()', cat: '增删改', mut: true, retType: 'array（被删掉的元素）',
+    desc: '万能手术刀：从指定位置删除若干个元素，同时可以插入新元素。会直接改原数组。',
+    args: [
+      { key: 'start', label: '起始索引', def: '1' },
+      { key: 'del', label: '删除个数', def: '2' },
+      { key: 'items', label: '插入的值（可留空）', def: '25, 35', list: true }
+    ],
+    code: a => 'arr.<span class="fn">splice</span>(<span class="num">' + a.start + '</span>, <span class="num">' + a.del + '</span>' +
+      (a.items && a.items.length ? ', ' + a.items.map(litHTML).join(', ') : '') + ')',
+    apply: (arr, a) => {
+      const rm = arr.splice(Number(a.start) || 0, Number(a.del) || 0, ...(a.items || []).map(mk));
+      return { ret: rm.map(o => o.v) };
+    }
+  },
+
+  /* ---------- 查找（不改原数组） ---------- */
+  {
+    id: 'indexOf', name: 'indexOf()', cat: '查找', mut: false, retType: 'number（索引，找不到为 -1）',
+    desc: '从左往右找，返回第一次出现的下标；找不到返回 -1。',
+    args: [{ key: 'v', label: '要找的值', def: '4' }],
+    code: a => 'arr.<span class="fn">indexOf</span>(' + litHTML(a.v) + ')',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] === a.v;
+        out.push({ i, ok, note: 'arr[' + i + '] = ' + fmt(vals[i]) + ' → ' + (ok ? '✅ 命中，下标 ' + i : '✖ 不是 ' + fmt(a.v)) });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '遍历结束仍未找到 → 返回 -1' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).indexOf(a.v) })
+  },
+  {
+    id: 'lastIndexOf', name: 'lastIndexOf()', cat: '查找', mut: false, retType: 'number（索引，找不到为 -1）',
+    desc: '和 indexOf 一样，但从右往左找，返回最后一次出现的下标。',
+    args: [{ key: 'v', label: '要找的值', def: '1' }],
+    code: a => 'arr.<span class="fn">lastIndexOf</span>(' + litHTML(a.v) + ')',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = vals.length - 1; i >= 0; i--) {
+        const ok = vals[i] === a.v;
+        out.push({ i, ok, note: 'arr[' + i + '] = ' + fmt(vals[i]) + ' → ' + (ok ? '✅ 命中，下标 ' + i : '✖ 不是 ' + fmt(a.v)) });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '遍历结束仍未找到 → 返回 -1' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).lastIndexOf(a.v) })
+  },
+  {
+    id: 'includes', name: 'includes()', cat: '查找', mut: false, retType: 'boolean',
+    desc: '只问“有没有”，找到就 true，否则 false。比 indexOf 更语义化。',
+    args: [{ key: 'v', label: '要找的值', def: '5' }],
+    code: a => 'arr.<span class="fn">includes</span>(' + litHTML(a.v) + ')',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] === a.v;
+        out.push({ i, ok, note: 'arr[' + i + '] = ' + fmt(vals[i]) + ' → ' + (ok ? '✅ 找到了' : '✖ 继续找') });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '没有这个元素 → 返回 false' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).includes(a.v) })
+  },
+  {
+    id: 'find', name: 'find()', cat: '查找', mut: false, retType: '元素本身 / undefined',
+    desc: '按条件找，返回第一个满足的元素值（不是下标）；没有则 undefined。',
+    args: [{ key: 'v', label: '条件 x > ?', def: '5' }],
+    code: a => 'arr.<span class="fn">find</span>(x =&gt; x &gt; <span class="num">' + a.v + '</span>)',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] > a.v;
+        out.push({ i, ok, mark: true, note: fmt(vals[i]) + ' &gt; ' + a.v + ' ? ' + (ok ? '✅ 满足，返回它' : '✖ 不满足') });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '没有元素满足条件 → undefined' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).find(x => x > a.v) })
+  },
+  {
+    id: 'findIndex', name: 'findIndex()', cat: '查找', mut: false, retType: 'number（索引，没有为 -1）',
+    desc: '和 find 一样按条件找，但返回的是下标；没有则 -1。',
+    args: [{ key: 'v', label: '条件 x > ?', def: '5' }],
+    code: a => 'arr.<span class="fn">findIndex</span>(x =&gt; x &gt; <span class="num">' + a.v + '</span>)',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] > a.v;
+        out.push({ i, ok, mark: true, note: fmt(vals[i]) + ' &gt; ' + a.v + ' ? ' + (ok ? '✅ 返回下标 ' + i : '✖ 跳过') });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '没有元素满足条件 → -1' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).findIndex(x => x > a.v) })
+  },
+  {
+    id: 'some', name: 'some()', cat: '查找', mut: false, retType: 'boolean',
+    desc: '只要有一个满足条件就 true（一票通过），全部不满足才 false。',
+    args: [{ key: 'v', label: '条件 x > ?', def: '8' }],
+    code: a => 'arr.<span class="fn">some</span>(x =&gt; x &gt; <span class="num">' + a.v + '</span>)',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] > a.v;
+        out.push({ i, ok, mark: true, note: fmt(vals[i]) + ' &gt; ' + a.v + ' ? ' + (ok ? '✅ 够了，返回 true' : '✖ 继续') });
+        if (ok) return out;
+      }
+      out.push({ i: -1, note: '全部不满足 → false' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).some(x => x > a.v) })
+  },
+  {
+    id: 'every', name: 'every()', cat: '查找', mut: false, retType: 'boolean',
+    desc: '要求每一个都满足条件才 true（一票否决），遇到第一个不满足就停。',
+    args: [{ key: 'v', label: '条件 x > ?', def: '0' }],
+    code: a => 'arr.<span class="fn">every</span>(x =&gt; x &gt; <span class="num">' + a.v + '</span>)',
+    steps: (vals, a) => {
+      const out = [];
+      for (let i = 0; i < vals.length; i++) {
+        const ok = vals[i] > a.v;
+        out.push({ i, ok, mark: true, note: fmt(vals[i]) + ' &gt; ' + a.v + ' ? ' + (ok ? '✅ 通过' : '✖ 否决，返回 false') });
+        if (!ok) return out;
+      }
+      out.push({ i: -1, note: '全部通过 → true' });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).every(x => x > a.v) })
+  },
+
+  /* ---------- 遍历与生成 ---------- */
+  {
+    id: 'forEach', name: 'forEach()', cat: '遍历生成', mut: false, retType: 'undefined（只做事情）',
+    desc: '挨个访问每个元素并执行回调，没有返回值，纯粹“做点事”。',
+    args: [],
+    code: () => 'arr.<span class="fn">forEach</span>(x =&gt; console.<span class="fn">log</span>(x))',
+    steps: vals => vals.map((v, i) => ({ i, note: '第 ' + i + ' 次回调：x = ' + fmt(v) })),
+    apply: () => ({ ret: undefined })
+  },
+  {
+    id: 'map', name: 'map()', cat: '遍历生成', mut: false, retType: 'array（等长的新数组）',
+    desc: '把每个元素加工一遍，返回一个长度相同的新数组。原数组纹丝不动。',
+    args: [{ key: 'k', label: '倍数 k（x × k）', def: '2' }],
+    code: a => '<span class="kw">const</span> out = arr.<span class="fn">map</span>(x =&gt; x * <span class="num">' + a.k + '</span>)',
+    steps: (vals, a) => vals.map((v, i) => ({ i, note: fmt(v) + ' × ' + a.k + ' → ' + fmt(mapVal(v, a.k)) })),
+    apply: (arr, a) => {
+      const out = arr.map(o => ({ id: o.id, v: mapVal(o.v, a.k) }));
+      return { ret: out.map(o => o.v), newArr: out };
+    }
+  },
+  {
+    id: 'filter', name: 'filter()', cat: '遍历生成', mut: false, retType: 'array（筛选后的新数组）',
+    desc: '按条件筛选，满足的留下、不满足的淘汰，返回新数组。',
+    args: [{ key: 'v', label: '条件 x > ?', def: '4' }],
+    code: a => '<span class="kw">const</span> out = arr.<span class="fn">filter</span>(x =&gt; x &gt; <span class="num">' + a.v + '</span>)',
+    steps: (vals, a) => vals.map((v, i) => ({
+      i, ok: v > a.v, mark: true,
+      note: fmt(v) + ' &gt; ' + a.v + ' ? ' + (v > a.v ? '✅ 留下' : '✖ 淘汰')
+    })),
+    apply: (arr, a) => {
+      const out = arr.filter(o => o.v > a.v);
+      return { ret: out.map(o => o.v), newArr: out };
+    }
+  },
+  {
+    id: 'reduce', name: 'reduce()', cat: '遍历生成', mut: false, retType: '任意类型（累积值）',
+    desc: '带着一个“累加器”从左到右滚一遍，把整个数组压成一个值（求和、拼接、计数都靠它）。',
+    args: [{ key: 'init', label: '初始值 acc', def: '0' }],
+    code: a => '<span class="kw">const</span> r = arr.<span class="fn">reduce</span>((acc, x) =&gt; acc + x, <span class="num">' + a.init + '</span>)',
+    steps: (vals, a) => {
+      let acc = Number(a.init) || 0; const out = [];
+      out.push({ i: -1, acc, note: '初始 acc = ' + acc });
+      vals.forEach((v, i) => { acc += v; out.push({ i, acc, note: 'acc + ' + fmt(v) + ' = ' + acc }); });
+      out.push({ i: -1, acc, note: '累积完成 → ' + acc });
+      return out;
+    },
+    apply: (arr, a) => ({ ret: V(arr).reduce((acc, x) => acc + x, Number(a.init) || 0) })
+  },
+
+  /* ---------- 重组与排序 ---------- */
+  {
+    id: 'slice', name: 'slice()', cat: '重组排序', mut: false, retType: 'array（截取的新数组）',
+    desc: '截取 [start, end) 这一段（含头不含尾），原数组不变。省略 end 则取到末尾。',
+    args: [{ key: 'start', label: '起始索引', def: '1' }, { key: 'end', label: '结束索引（不含，可留空）', def: '4' }],
+    code: a => '<span class="kw">const</span> out = arr.<span class="fn">slice</span>(<span class="num">' + a.start + '</span>' +
+      (a.end === '' ? '' : ', <span class="num">' + a.end + '</span>') + ')',
+    steps: (vals, a) => {
+      const s = Number(a.start) || 0, e = a.end === '' ? vals.length : Number(a.end);
+      return vals.map((v, i) => ({
+        i, ok: i >= s && i < e, mark: true,
+        note: '下标 ' + i + (i >= s && i < e ? ' 在区间内 ✅ 带走' : ' 在区间外 ✖ 不要')
+      }));
+    },
+    apply: (arr, a) => {
+      const out = a.end === '' ? arr.slice(Number(a.start) || 0) : arr.slice(Number(a.start) || 0, Number(a.end));
+      return { ret: out.map(o => o.v), newArr: out };
+    }
+  },
+  {
+    id: 'concat', name: 'concat()', cat: '重组排序', mut: false, retType: 'array（合并后的新数组）',
+    desc: '把别的值/数组接到后面，返回合并后的新数组，原数组不变。',
+    args: [{ key: 'more', label: '要合并的元素', def: '7, 8', list: true }],
+    code: a => '<span class="kw">const</span> out = arr.<span class="fn">concat</span>(<span class="str">[' + a.more.map(fmt).join(', ') + ']</span>)',
+    apply: (arr, a) => {
+      const out = arr.concat((a.more || []).map(mk));
+      return { ret: out.map(o => o.v), newArr: out };
+    }
+  },
+  {
+    id: 'join', name: 'join()', cat: '重组排序', mut: false, retType: 'string（拼接后的字符串）',
+    desc: '用指定分隔符把所有元素粘成一个字符串。不传分隔符默认用逗号。',
+    args: [{ key: 'sep', label: '分隔符', def: '-' }],
+    code: a => 'arr.<span class="fn">join</span>(<span class="str">\'' + a.sep + '\'</span>)',
+    steps: (vals, a) => vals.map((v, i) => ({ i, note: '拼上 ' + fmt(v) + (i < vals.length - 1 ? " + '" + a.sep + "'" : '') })),
+    apply: (arr, a) => ({ ret: V(arr).join(String(a.sep)) })
+  },
+  {
+    id: 'reverse', name: 'reverse()', cat: '重组排序', mut: true, retType: 'array（反转后的原数组）',
+    desc: '原地掉头，把顺序整个倒过来。注意：返回的就是被改掉的原数组。',
+    args: [],
+    code: () => 'arr.<span class="fn">reverse</span>()',
+    apply: arr => { arr.reverse(); return { ret: V(arr) }; }
+  },
+  {
+    id: 'sort', name: 'sort()', cat: '重组排序', mut: true, retType: 'array（排序后的原数组）',
+    desc: '原地排序。这里使用 (a, b) => a - b 做数字升序；字符串则按字典序。会改原数组。',
+    args: [],
+    code: () => 'arr.<span class="fn">sort</span>((a, b) =&gt; a - b)',
+    apply: arr => {
+      arr.sort((p, q) => typeof p.v === 'number' && typeof q.v === 'number'
+        ? p.v - q.v
+        : String(p.v).localeCompare(String(q.v)));
+      return { ret: V(arr) };
+    }
+  },
+  {
+    id: 'flat', name: 'flat()', cat: '重组排序', mut: false, retType: 'array（拍平后的新数组）',
+    desc: '把嵌套的小数组拆开铺平一层。选择本方法会自动载入嵌套数组素材。',
+    args: [],
+    code: () => '<span class="kw">const</span> out = arr.<span class="fn">flat</span>()',
+    apply: arr => {
+      const out = arr.flatMap(o => Array.isArray(o.v) ? o.v.map(mk) : [o]);
+      return { ret: out.map(o => o.v), newArr: out };
+    }
+  }
+];
+
+function mapVal(v, k) {
+  return typeof v === 'number' ? v * k : String(v).repeat(Math.max(1, Math.round(k)));
+}
+
+const CATS = ['增删改', '查找', '遍历生成', '重组排序'];
+const current = () => METHODS.find(m => m.id === state.methodId);
+const hasNested = () => state.arr.some(o => Array.isArray(o.v));
+
+/* =========================================================
+   渲染
+   ========================================================= */
+function rowHTML(list) {
+  if (!list.length) return '<span class="empty">（空数组）</span>';
+  return list.map((o, i) => {
+    const inner = Array.isArray(o.v)
+      ? '<div class="cell nested">[' + o.v.map(x => '<i class="mini">' + x + '</i>').join('') + ']</div>'
+      : '<div class="cell" style="--c:' + colorOf(o.id) + '">' + fesc(o.v) + '</div>';
+    return '<div class="slot" data-id="' + o.id + '" data-i="' + i + '"><span class="idx">' + i + '</span>' + inner + '</div>';
+  }).join('');
+}
+const fesc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// FLIP 动画：先记录旧位置，重排后再从旧位置滑到新位置
+function flipRender(container, html, source) {
+  const prev = new Map();
+  const collect = c => c && c.querySelectorAll('[data-id]').forEach(el => prev.set(el.dataset.id, el.getBoundingClientRect()));
+  collect(source);
+  collect(container);
+  container.innerHTML = html;
+  container.querySelectorAll('[data-id]').forEach(el => {
+    const p = prev.get(el.dataset.id);
+    if (!p) { el.classList.add('enter'); return; }
+    const n = el.getBoundingClientRect();
+    const dx = p.left - n.left, dy = p.top - n.top;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    el.style.transition = 'none';
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform .5s cubic-bezier(.2,.8,.2,1)';
+      el.style.transform = 'translate(0,0)';
+      el.addEventListener('transitionend', () => { el.style.transition = ''; el.style.transform = ''; }, { once: true });
+    });
+  });
+}
+
+function renderMain() { mainRow.innerHTML = rowHTML(state.arr); }
+function note(t) { noteEl.innerHTML = t; }
+function log(t) { const li = document.createElement('li'); li.innerHTML = t; logEl.appendChild(li); logEl.scrollTop = logEl.scrollHeight; }
+function clearStage() {
+  outWrap.hidden = true; outRow.innerHTML = '';
+  tray.innerHTML = ''; logEl.innerHTML = '';
+  retVal.textContent = '—'; retType.textContent = '—';
+  mutText.textContent = '—'; mutBox.className = 'box';
+}
+
+/* =========================================================
+   方法列表 / 参数 / 代码条
+   ========================================================= */
+function buildMethodList() {
+  methodList.innerHTML = '';
+  CATS.forEach(cat => {
+    const g = document.createElement('div');
+    g.className = 'm-group';
+    g.innerHTML = '<div class="gt">' + cat + '</div>';
+    const box = document.createElement('div');
+    box.className = 'm-list';
+    METHODS.filter(m => m.cat === cat).forEach(m => {
+      const b = document.createElement('button');
+      b.className = 'm' + (m.id === state.methodId ? ' on' : '');
+      b.textContent = m.name;
+      b.onclick = () => selectMethod(m.id);
+      box.appendChild(b);
+    });
+    g.appendChild(box);
+    methodList.appendChild(g);
+  });
+}
+
+function buildArgs() {
+  const m = current();
+  argsBox.innerHTML = '';
+  if (!m.args.length) {
+    argsBox.innerHTML = '<p class="hint" style="margin:0">该方法不需要参数，直接点「运行」。</p>';
+  } else {
+    m.args.forEach(a => {
+      const f = document.createElement('div');
+      f.className = 'field';
+      f.innerHTML = '<label>' + a.label + '</label>';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = a.def; inp.dataset.key = a.key; inp.dataset.list = a.list ? '1' : '';
+      inp.oninput = updateBand;
+      inp.onkeydown = e => { if (e.key === 'Enter') run(); };
+      f.appendChild(inp);
+      argsBox.appendChild(f);
+    });
+  }
+  $('mDesc').innerHTML = '<b style="color:var(--cyan)">' + m.name + '</b>：' + m.desc;
+  updateBand();
+}
+
+function readArgs() {
+  const m = current(), a = {};
+  argsBox.querySelectorAll('input').forEach(inp => {
+    a[inp.dataset.key] = inp.dataset.list ? parseList(inp.value) : parseOne(inp.value);
+  });
+  return a;
+}
+
+function updateBand() {
+  const m = current(), a = readArgs();
+  bandCode.innerHTML = m.code(a) + '<span class="cm">  // ' + (m.mut ? '会改变 arr' : 'arr 不变') + '</span>';
+}
+
+function selectMethod(id) {
+  state.methodId = id;
+  buildMethodList(); buildArgs(); clearStage();
+  const m = current();
+  if (m.id === 'flat' && !hasNested()) {
+    arrInput.value = '[1,2], [3,4], [5]';
+    loadFromInput(true);
+    note('已载入<b>嵌套数组</b>素材，点「运行」看它如何被拍平。');
+  } else {
+    note('<b>' + m.name + '</b> 已就绪，点「运行」▶');
+  }
+}
+
+/* =========================================================
+   运行动画
+   ========================================================= */
+async function playScan(steps) {
+  for (const st of steps) {
+    mainRow.querySelectorAll('.slot').forEach(s => s.classList.remove('scan', 'hit'));
+    const slot = st.i >= 0 ? mainRow.querySelector('.slot[data-i="' + st.i + '"]') : null;
+    if (slot) {
+      slot.classList.add('scan');
+      if (st.ok === true) slot.classList.add('hit');
+      if (st.ok === false && st.mark) slot.classList.add('miss');
+    }
+    note(st.note);
+    log(st.note);
+    await sleep(430);
+  }
+  mainRow.querySelectorAll('.slot').forEach(s => s.classList.remove('scan', 'hit'));
+}
+
+async function run() {
+  if (busy) return;
+  const m = current(), a = readArgs();
+  busy = true; runBtn.disabled = true;
+
+  clearStage();
+  const before = state.arr.map(o => ({ ...o }));
+  flipRender(mainRow, rowHTML(state.arr)); // 清掉上一次的 miss 标记
+  $('mainHead').textContent = '原数组 arr（' + before.length + ' 项）';
+  log('① 起始：arr = ' + arrText(before));
+  await sleep(220);
+
+  if (m.steps) await playScan(m.steps(V(before), a));
+
+  const out = m.apply(state.arr, a) || {};
+  const afterIds = new Set(state.arr.map(o => String(o.id)));
+  const removed = before.filter(o => !afterIds.has(String(o.id)));
+
+  if (removed.length) {
+    mainRow.querySelectorAll('.slot').forEach(s => { if (!afterIds.has(s.dataset.id)) s.classList.add('leave'); });
+    note('移出队伍：' + removed.map(o => fmt(o.v)).join(' , '));
+    log('② 被移除的元素 → ' + removed.map(o => fmt(o.v)).join(', '));
+    await sleep(380);
+  }
+
+  flipRender(mainRow, rowHTML(state.arr));
+  $('mainHead').textContent = m.mut ? 'arr（已被修改，' + state.arr.length + ' 项）' : '原数组 arr（保持不变，' + state.arr.length + ' 项）';
+  $('mainTag').textContent = m.mut ? '已被修改' : '未被修改';
+  $('mainTag').className = 'tag ' + (m.mut ? 'change' : 'keep');
+
+  if (removed.length) {
+    tray.innerHTML = '<span class="lab">被移除：</span>' +
+      removed.map(o => '<span class="gone">' + fesc(fmt(o.v)) + '</span>').join('');
+  }
+
+  if (out.newArr) {
+    outWrap.hidden = false;
+    $('outHead').textContent = 'arr.' + m.name.replace('()', '') + ' 返回的新数组（' + out.newArr.length + ' 项）';
+    await sleep(140);
+    flipRender(outRow, rowHTML(out.newArr), mainRow);
+  }
+
+  retVal.textContent = fmtRet(out.ret);
+  retType.textContent = m.retType;
+  mutBox.className = 'box ' + (m.mut ? 'warn' : 'good');
+  mutText.textContent = m.mut ? '会改变原数组' : '不会改变原数组';
+  note('执行 <b>' + m.name + '</b> 完成，返回值：<b>' + fesc(fmtRet(out.ret)) + '</b>');
+  log('③ ' + m.name + ' 返回值 → ' + fesc(fmtRet(out.ret)) + '（' + (m.mut ? 'arr 已被改变' : 'arr 未被改变') + '）');
+
+  busy = false; runBtn.disabled = false;
+}
+
+/* =========================================================
+   数组素材
+   ========================================================= */
+function loadFromInput(silent) {
+  state.arr = parseList(arrInput.value).map(mk);
+  renderMain(); clearStage();
+  $('mainHead').textContent = '原数组 arr（' + state.arr.length + ' 项）';
+  $('mainTag').textContent = '当前状态'; $('mainTag').className = 'tag keep';
+  if (!silent) { log('载入新数组：arr = ' + arrText(state.arr)); note('素材已更新，选个方法点「运行」▶'); }
+}
+
+const PRESETS = {
+  '数字': '3, 1, 4, 1, 5, 9, 2, 6',
+  '乱序数字': '40, 5, 100, 12, 8',
+  '字符串': "'apple', 'banana', 'cherry', 'date'",
+  '嵌套数组': '[1,2], [3,4], [5]',
+  '两个元素': '10, 9'
+};
+function buildPresets() {
+  const box = $('presets');
+  Object.keys(PRESETS).forEach(k => {
+    const c = document.createElement('button');
+    c.className = 'chip'; c.textContent = k;
+    c.onclick = () => { arrInput.value = PRESETS[k]; loadFromInput(); };
+    box.appendChild(c);
+  });
+}
+
+/* =========================================================
+   初始化
+   ========================================================= */
+function buildSheet() {
+  const body = $('sheetBody');
+  METHODS.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="mono">' + m.name + '</td><td>' + m.cat + '</td><td>' + m.desc +
+      '</td><td class="' + (m.mut ? 'y' : 'n') + '">' + (m.mut ? '是' : '否') + '</td><td class="mono">' + m.retType + '</td>';
+    body.appendChild(tr);
+  });
+}
+
+buildMethodList();
+buildArgs();
+buildPresets();
+buildSheet();
+renderMain();
+$('mainHead').textContent = '原数组 arr（' + state.arr.length + ' 项）';
+
+runBtn.onclick = run;
+$('applyInput').onclick = () => loadFromInput();
+$('randBtn').onclick = () => {
+  arrInput.value = Array.from({ length: 7 }, () => Math.floor(Math.random() * 90) + 10).join(', ');
+  loadFromInput();
+};
+$('shuffleBtn').onclick = () => {
+  const vals = V(state.arr);
+  for (let i = vals.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [vals[i], vals[j]] = [vals[j], vals[i]]; }
+  arrInput.value = vals.map(v => Array.isArray(v) ? '[' + v.join(',') + ']' : typeof v === 'number' ? v : "'" + v + "'").join(', ');
+  loadFromInput();
+};
+$('clearBtn').onclick = () => { arrInput.value = ''; loadFromInput(); };
+</script>
+</body>
+</html>

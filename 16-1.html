@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16-1 · JavaScript 数组主要方法（可视化）</title>
+<style>
+  :root {
+    --bg-1: #07111f;
+    --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --panel-strong: rgba(17, 24, 39, 0.9);
+    --card: rgba(148, 163, 184, 0.08);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc;
+    --muted: #9bb0c9;
+    --blue: #60a5fa;
+    --cyan: #67e8f9;
+    --purple: #a78bfa;
+    --pink: #f9a8d4;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6);
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 80px;
+  }
+
+  .page {
+    width: min(1180px, 100%);
+    background: rgba(10, 16, 28, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+
+  .hero {
+    position: relative;
+    padding: 50px 48px 28px;
+    background:
+      linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)),
+      rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(12px);
+    opacity: 0.8;
+  }
+  .hero::before {
+    width: 220px; height: 220px; right: 8%; top: -50px;
+    background: rgba(103, 232, 249, 0.18);
+  }
+  .hero::after {
+    width: 180px; height: 180px; left: 6%; bottom: -30px;
+    background: rgba(249, 168, 212, 0.16);
+  }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: 800; font-size: 26px; color: #08111d;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.7rem, 2.5vw, 2.6rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 840px; color: var(--muted); line-height: 1.8; }
+
+  .content { padding: 26px 48px 40px; }
+
+  /* category filter */
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+  .filters button {
+    cursor: pointer; border: 1px solid var(--line); color: var(--muted);
+    background: rgba(148,163,184,0.06); padding: 8px 16px; border-radius: 999px;
+    font-size: 0.9rem; transition: all 0.2s ease;
+  }
+  .filters button:hover { color: var(--text); border-color: rgba(103,232,249,0.3); }
+  .filters button.active { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 700; }
+
+  .cat-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 16px; }
+  .cat-title h2 { margin: 0; font-size: 1.3rem; }
+  .cat-title .pill { font-size: 0.78rem; color: var(--cyan); border: 1px solid rgba(103,232,249,0.25); padding: 3px 10px; border-radius: 999px; }
+  .cat-title .line { flex: 1; height: 1px; background: var(--line); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    display: flex;
+    flex-direction: column;
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .method { font-family: "Cascadia Code", "Consolas", monospace; font-size: 1.15rem; font-weight: 800; color: var(--cyan); letter-spacing: 0.5px; }
+  .tag { font-size: 0.72rem; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .tag.mut { color: var(--red); background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.25); }
+  .tag.non { color: var(--green); background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); }
+  .desc { color: var(--muted); font-size: 0.86rem; line-height: 1.6; margin: 4px 0 12px; min-height: 40px; }
+
+  .viz {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    min-height: 56px; padding: 12px;
+    background: rgba(8, 14, 26, 0.6);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 10px;
+  }
+  .viz .label { width: 100%; font-size: 0.72rem; color: var(--muted); margin-bottom: -2px; }
+
+  .cell {
+    --c: var(--blue);
+    position: relative;
+    min-width: 38px; height: 38px; padding: 0 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.95rem; color: #08111d;
+    background: var(--c);
+    border-radius: 10px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    animation: pop-in 0.35s ease both;
+  }
+  .cell.nested { background: transparent; box-shadow: none; color: var(--muted); padding: 0; gap: 4px; }
+  .cell.nested .cell { min-width: 30px; height: 30px; font-size: 0.82rem; }
+  .cell.hl { outline: 3px solid #fff; outline-offset: 2px; transform: translateY(-4px); }
+  .cell.dim { opacity: 0.25; filter: grayscale(0.4); }
+  .cell.gone { animation: pop-out 0.4s ease forwards; }
+  .cell.add { animation: pop-add 0.45s ease both; }
+
+  @keyframes pop-in { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes pop-out { to { transform: scale(0.3) translateY(-18px); opacity: 0; } }
+  @keyframes pop-add { from { transform: translateX(-26px) scale(0.5); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+
+  .arrow { color: var(--muted); font-size: 1.2rem; padding: 0 2px; }
+  .result-text { font-family: "Cascadia Code","Consolas",monospace; font-size: 0.82rem; color: var(--amber); word-break: break-all; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 12px; }
+  .actions button {
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148,163,184,0.08), rgba(15,23,42,0.2));
+    padding: 7px 12px; border-radius: 10px; font-size: 0.82rem;
+    transition: all 0.18s ease;
+  }
+  .actions button:hover { border-color: rgba(103,232,249,0.4); transform: translateY(-1px); }
+  .actions button.reset { color: var(--muted); }
+
+  pre.code {
+    margin: 0; padding: 12px 14px; border-radius: 12px;
+    background: rgba(2, 6, 23, 0.55);
+    border: 1px solid var(--line);
+    font-family: "Cascadia Code","Consolas",monospace;
+    font-size: 0.8rem; line-height: 1.55; color: #cfe3ff;
+    overflow-x: auto; white-space: pre;
+  }
+  pre.code .kw { color: #c792ea; }
+  pre.code .fn { color: #82aaff; }
+  pre.code .str { color: #c3e88d; }
+  pre.code .num { color: #f78c6c; }
+  pre.code .cm { color: #5c6b82; }
+
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 760px) {
+    .hero, .content { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">[ ]</div>
+      <div>
+        <h1>JavaScript 数组主要方法</h1>
+      </div>
+    </div>
+    <p class="sub">
+      把数组想象成一排彩色方块，每个方法都会对这排方块做不同的事。点击卡片里的按钮，
+      看方块如何被<b>添加、删除、查找、遍历、重排</b>——边点边学，比纯看代码形象多了。
+    </p>
+  </header>
+
+  <main class="content">
+    <div class="filters" id="filters"></div>
+    <div id="catalog"></div>
+    <div class="footer">© 2026 高级网页设计课堂实践 · 16-1 JavaScript 数组方法可视化</div>
+  </main>
+</div>
+
+<script>
+const PALETTE = ['#60a5fa','#a78bfa','#67e8f9','#34d399','#f9a8d4','#fbbf24','#fb7185'];
+const COLOR = i => PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// 渲染普通数组为方块行
+function renderArray(el, arr, opts = {}) {
+  const { highlight = [], dim = [], label = '' } = opts;
+  let html = label ? `<span class="label">${label}</span>` : '';
+  html += arr.map((v, i) => {
+    let cls = 'cell';
+    if (highlight.includes(i)) cls += ' hl';
+    if (dim.includes(i)) cls += ' dim';
+    return `<div class="${cls}" style="--c:${COLOR(i)}" data-i="${i}">${v}</div>`;
+  }).join('');
+  el.innerHTML = html;
+}
+
+// 渲染嵌套数组（用于 flat）
+function renderNested(el, arr) {
+  let html = arr.map(g => {
+    if (Array.isArray(g)) {
+      return `<div class="cell nested">[${g.map(v => `<div class="cell" style="--c:${COLOR(v)}">${v}</div>`).join('')}]</div>`;
+    }
+    return `<div class="cell" style="--c:${COLOR(g)}">${g}</div>`;
+  }).join('');
+  el.innerHTML = html;
+}
+
+// 通用：清空结果文本
+function setResult(card, text) {
+  const r = card.querySelector('.result-text');
+  if (r) r.innerHTML = text;
+}
+
+// 深拷贝初始数组
+const clone = a => JSON.parse(JSON.stringify(a));
+
+/* ============ 方法定义 ============ */
+const METHODS = [
+  /* ---- 增删改（会改变原数组） ---- */
+  {
+    id: 'push', cat: '增删改', name: 'push()', mut: true,
+    desc: '在数组末尾追加一个或多个元素，返回新长度。',
+    init: () => [3, 1, 4],
+    code: `<span class="cm">// 在末尾加一个</span>
+arr.<span class="fn">push</span>(<span class="num">9</span>);   <span class="cm">// [3, 1, 4, 9]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      arr.push(9);
+      card._arr = arr;
+      renderArray(viz, arr);
+      viz.querySelectorAll('.cell').forEach((c, i) => { if (i === arr.length - 1) c.classList.add('add'); });
+      setResult(card, '返回新长度 → ' + arr.length);
+    }
+  },
+  {
+    id: 'pop', cat: '增删改', name: 'pop()', mut: true,
+    desc: '删除并返回数组最后一个元素（栈操作）。',
+    init: () => [3, 1, 4, 9],
+    code: `<span class="cm">// 拿走最后一个</span>
+<span class="kw">const</span> last = arr.<span class="fn">pop</span>(); <span class="cm">// 9</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      if (arr.length === 0) { setResult(card, '数组已空，无元素可 pop'); return; }
+      const removed = arr.pop();
+      const lastEl = viz.querySelector('.cell:last-child');
+      if (lastEl) lastEl.classList.add('gone');
+      await sleep(380);
+      card._arr = arr;
+      renderArray(viz, arr);
+      setResult(card, '被删除的元素 → ' + removed);
+    }
+  },
+  {
+    id: 'unshift', cat: '增删改', name: 'unshift()', mut: true,
+    desc: '在数组开头插入一个或多个元素，返回新长度。',
+    init: () => [3, 1, 4],
+    code: `<span class="cm">// 在开头插一个</span>
+arr.<span class="fn">unshift</span>(<span class="num">7</span>); <span class="cm">// [7, 3, 1, 4]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      arr.unshift(7);
+      card._arr = arr;
+      renderArray(viz, arr);
+      const first = viz.querySelector('.cell');
+      if (first) first.classList.add('add');
+      setResult(card, '返回新长度 → ' + arr.length);
+    }
+  },
+  {
+    id: 'shift', cat: '增删改', name: 'shift()', mut: true,
+    desc: '删除并返回数组第一个元素（队列操作）。',
+    init: () => [7, 3, 1, 4],
+    code: `<span class="cm">// 拿走第一个</span>
+<span class="kw">const</span> first = arr.<span class="fn">shift</span>(); <span class="cm">// 7</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      if (arr.length === 0) { setResult(card, '数组已空，无元素可 shift'); return; }
+      const removed = arr.shift();
+      const firstEl = viz.querySelector('.cell');
+      if (firstEl) firstEl.classList.add('gone');
+      await sleep(380);
+      card._arr = arr;
+      renderArray(viz, arr);
+      setResult(card, '被删除的元素 → ' + removed);
+    }
+  },
+  {
+    id: 'splice', cat: '增删改', name: 'splice()', mut: true,
+    desc: '从指定位置删除若干元素，并可插入新元素。',
+    init: () => [10, 20, 30, 40, 50],
+    code: `<span class="cm">// 从索引1删2个，再插入 25、35</span>
+arr.<span class="fn">splice</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">25</span>, <span class="num">35</span>);
+<span class="cm">// [10, 25, 35, 40, 50]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const removed = arr.splice(1, 2, 25, 35);
+      card._arr = arr;
+      renderArray(viz, arr);
+      setResult(card, '被删除的 → [' + removed.join(', ') + ']');
+    }
+  },
+
+  /* ---- 查找（不修改原数组） ---- */
+  {
+    id: 'indexOf', cat: '查找', name: 'indexOf()', mut: false,
+    desc: '返回某元素首次出现的索引，找不到返回 -1。',
+    init: () => ['a', 'b', 'c', 'b', 'd'],
+    code: `<span class="cm">// 找 'b' 第一次在哪</span>
+arr.<span class="fn">indexOf</span>(<span class="str">'b'</span>); <span class="cm">// 1</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const idx = arr.indexOf('b');
+      renderArray(viz, arr, idx >= 0 ? { highlight: [idx] } : {});
+      if (idx < 0) setResult(card, "未找到，返回 -1");
+      else setResult(card, "找到，索引 → " + idx);
+    }
+  },
+  {
+    id: 'includes', cat: '查找', name: 'includes()', mut: false,
+    desc: '判断数组是否包含某元素，返回布尔值。',
+    init: () => [1, 2, 3, 4, 5],
+    code: `<span class="cm">// 是否包含 3</span>
+arr.<span class="fn">includes</span>(<span class="num">3</span>); <span class="cm">// true</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const ok = arr.includes(3);
+      renderArray(viz, arr, ok ? { highlight: [arr.indexOf(3)] } : {});
+      setResult(card, "包含 3 ? → " + ok);
+    }
+  },
+  {
+    id: 'find', cat: '查找', name: 'find()', mut: false,
+    desc: '返回第一个满足条件的元素，没有则返回 undefined。',
+    init: () => [5, 12, 8, 20, 3],
+    code: `<span class="cm">// 找第一个 > 10 的数</span>
+arr.<span class="fn">find</span>(x => x > <span class="num">10</span>); <span class="cm">// 12</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const found = arr.find(x => x > 10);
+      const idx = arr.indexOf(found);
+      renderArray(viz, arr, idx >= 0 ? { highlight: [idx] } : {});
+      setResult(card, "结果 → " + (found === undefined ? 'undefined' : found));
+    }
+  },
+  {
+    id: 'findIndex', cat: '查找', name: 'findIndex()', mut: false,
+    desc: '返回第一个满足条件的元素索引，没有则返回 -1。',
+    init: () => [5, 12, 8, 20, 3],
+    code: `<span class="cm">// 找第一个 > 10 的索引</span>
+arr.<span class="fn">findIndex</span>(x => x > <span class="num">10</span>); <span class="cm">// 1</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const idx = arr.findIndex(x => x > 10);
+      renderArray(viz, arr, idx >= 0 ? { highlight: [idx] } : {});
+      setResult(card, "索引 → " + idx);
+    }
+  },
+
+  /* ---- 遍历与生成 ---- */
+  {
+    id: 'forEach', cat: '遍历生成', name: 'forEach()', mut: false,
+    desc: '对数组每个元素执行一次函数（无返回值）。',
+    init: () => [2, 4, 6, 8],
+    code: `<span class="cm">// 依次打印每个元素</span>
+arr.<span class="fn">forEach</span>(x => console.<span class="fn">log</span>(x));`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      renderArray(viz, arr);
+      const cells = [...viz.querySelectorAll('.cell')];
+      setResult(card, '逐个访问中…');
+      for (let i = 0; i < cells.length; i++) {
+        cells[i].classList.add('hl');
+        await sleep(420);
+        cells[i].classList.remove('hl');
+      }
+      setResult(card, 'forEach 完成，共访问 ' + arr.length + ' 个');
+    }
+  },
+  {
+    id: 'map', cat: '遍历生成', name: 'map()', mut: false,
+    desc: '对每个元素做处理，返回等长的“新数组”（不改原数组）。',
+    init: () => [1, 2, 3, 4],
+    code: `<span class="cm">// 每个数 ×2</span>
+<span class="kw">const</span> out = arr.<span class="fn">map</span>(x => x * <span class="num">2</span>);
+<span class="cm">// [2, 4, 6, 8]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const out = arr.map(x => x * 2);
+      renderArray(viz, arr, { label: '原数组 arr' });
+      await sleep(200);
+      const resWrap = document.createElement('div');
+      resWrap.className = 'viz';
+      resWrap.style.marginTop = '0';
+      card.querySelector('.actions').after(resWrap);
+      renderArray(resWrap, out, { label: '返回新数组 map' });
+      setResult(card, '[' + out.join(', ') + ']');
+    }
+  },
+  {
+    id: 'filter', cat: '遍历生成', name: 'filter()', mut: false,
+    desc: '保留满足条件的元素，返回筛选后的新数组。',
+    init: () => [1, 2, 3, 4, 5, 6],
+    code: `<span class="cm">// 只保留偶数</span>
+<span class="kw">const</span> even = arr.<span class="fn">filter</span>(x => x % <span class="num">2</span> === <span class="num">0</span>);
+<span class="cm">// [2, 4, 6]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const keep = arr.map(x => x % 2 === 0);
+      renderArray(viz, arr, { highlight: keep.map((k, i) => k ? i : -1).filter(i => i >= 0), dim: keep.map((k, i) => k ? -1 : i).filter(i => i >= 0) });
+      await sleep(450);
+      const out = arr.filter(x => x % 2 === 0);
+      const resWrap = document.createElement('div');
+      resWrap.className = 'viz';
+      resWrap.style.marginTop = '0';
+      card.querySelector('.actions').after(resWrap);
+      renderArray(resWrap, out, { label: 'filter 结果（仅偶数）' });
+      setResult(card, '[' + out.join(', ') + ']');
+    }
+  },
+  {
+    id: 'reduce', cat: '遍历生成', name: 'reduce()', mut: false,
+    desc: '把数组“累积”成一个值（求和、拼接等）。',
+    init: () => [1, 2, 3, 4],
+    code: `<span class="cm">// 求所有元素的和</span>
+<span class="kw">const</span> sum = arr.<span class="fn">reduce</span>((acc, x) => acc + x, <span class="num">0</span>);
+<span class="cm">// 10</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      renderArray(viz, arr);
+      const cells = [...viz.querySelectorAll('.cell')];
+      let acc = 0;
+      for (let i = 0; i < cells.length; i++) {
+        acc += arr[i];
+        cells[i].classList.add('hl');
+        setResult(card, '累加中：' + arr.slice(0, i + 1).join(' + ') + ' = ' + acc);
+        await sleep(520);
+        cells[i].classList.remove('hl');
+      }
+      setResult(card, '总和 → ' + acc);
+    }
+  },
+
+  /* ---- 重组与排序 ---- */
+  {
+    id: 'slice', cat: '重组排序', name: 'slice()', mut: false,
+    desc: '截取 [start, end) 区间，返回新数组，不改原数组。',
+    init: () => ['A', 'B', 'C', 'D', 'E'],
+    code: `<span class="cm">// 取索引1到3（不含3）</span>
+arr.<span class="fn">slice</span>(<span class="num">1</span>, <span class="num">3</span>); <span class="cm">// ['B','C']</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const out = arr.slice(1, 3);
+      renderArray(viz, arr, { highlight: [1, 2] });
+      await sleep(300);
+      const resWrap = document.createElement('div');
+      resWrap.className = 'viz';
+      resWrap.style.marginTop = '0';
+      card.querySelector('.actions').after(resWrap);
+      renderArray(resWrap, out, { label: 'slice(1, 3)' });
+      setResult(card, '[' + out.join(', ') + ']');
+    }
+  },
+  {
+    id: 'concat', cat: '重组排序', name: 'concat()', mut: false,
+    desc: '把多个数组合并成一个新数组。',
+    init: () => [1, 2, 3],
+    code: `<span class="cm">// 合并两个数组</span>
+arr.<span class="fn">concat</span>([<span class="num">4</span>, <span class="num">5</span>]);
+<span class="cm">// [1, 2, 3, 4, 5]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      const out = arr.concat([4, 5]);
+      renderArray(viz, arr, { label: '原数组' });
+      await sleep(200);
+      const resWrap = document.createElement('div');
+      resWrap.className = 'viz';
+      resWrap.style.marginTop = '0';
+      card.querySelector('.actions').after(resWrap);
+      renderArray(resWrap, out, { label: 'concat 后' });
+      setResult(card, '[' + out.join(', ') + ']');
+    }
+  },
+  {
+    id: 'join', cat: '重组排序', name: 'join()', mut: false,
+    desc: '用指定分隔符把数组拼成一个字符串。',
+    init: () => ['Hello', 'JS', 'Array'],
+    code: `<span class="cm">// 用 - 连接</span>
+arr.<span class="fn">join</span>(<span class="str">'-'</span>); <span class="cm">// "Hello-JS-Array"</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      renderArray(viz, arr);
+      await sleep(250);
+      setResult(card, '"' + arr.join('-') + '"');
+    }
+  },
+  {
+    id: 'reverse', cat: '重组排序', name: 'reverse()', mut: true,
+    desc: '原地反转数组顺序（注意：会修改原数组）。',
+    init: () => [1, 2, 3, 4, 5],
+    code: `<span class="cm">// 反转顺序</span>
+arr.<span class="fn">reverse</span>(); <span class="cm">// [5, 4, 3, 2, 1]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      arr.reverse();
+      card._arr = arr;
+      renderArray(viz, arr);
+      viz.querySelectorAll('.cell').forEach(c => c.classList.add('add'));
+      setResult(card, '[' + arr.join(', ') + ']');
+    }
+  },
+  {
+    id: 'sort', cat: '重组排序', name: 'sort()', mut: true,
+    desc: '排序。默认按字符串排，数字需传比较函数。',
+    init: () => [40, 5, 100, 12, 8],
+    code: `<span class="cm">// 按数字从小到大</span>
+arr.<span class="fn">sort</span>((a, b) => a - b);
+<span class="cm">// [5, 8, 12, 40, 100]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      let arr = card._arr;
+      arr.sort((a, b) => a - b);
+      card._arr = arr;
+      renderArray(viz, arr);
+      viz.querySelectorAll('.cell').forEach(c => c.classList.add('add'));
+      setResult(card, '[' + arr.join(', ') + ']');
+    }
+  },
+  {
+    id: 'flat', cat: '重组排序', name: 'flat()', mut: false,
+    desc: '把嵌套数组“拍平”，可指定层级深度。',
+    init: () => [[1, 2], [3, 4], [5]],
+    code: `<span class="cm">// 拍平一层</span>
+arr.<span class="fn">flat</span>(); <span class="cm">// [1, 2, 3, 4, 5]</span>`,
+    run: async (card) => {
+      const viz = card.querySelector('.viz');
+      const nested = clone(card._init);
+      renderNested(viz, nested);
+      await sleep(300);
+      const out = nested.flat();
+      const resWrap = document.createElement('div');
+      resWrap.className = 'viz';
+      resWrap.style.marginTop = '0';
+      card.querySelector('.actions').after(resWrap);
+      renderArray(resWrap, out, { label: 'flat 后' });
+      setResult(card, '[' + out.join(', ') + ']');
+    }
+  }
+];
+
+/* ============ 渲染页面 ============ */
+const CATS = ['增删改', '查找', '遍历生成', '重组排序'];
+const catalog = document.getElementById('catalog');
+const filters = document.getElementById('filters');
+
+// 过滤器
+const cats = ['全部', ...CATS];
+cats.forEach((c, i) => {
+  const b = document.createElement('button');
+  b.textContent = c;
+  if (i === 0) b.classList.add('active');
+  b.onclick = () => {
+    [...filters.children].forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.cat-block').forEach(block => {
+      block.style.display = (c === '全部' || block.dataset.cat === c) ? '' : 'none';
+    });
+  };
+  filters.appendChild(b);
+});
+
+// 按分类渲染卡片
+CATS.forEach(cat => {
+  const block = document.createElement('section');
+  block.className = 'cat-block';
+  block.dataset.cat = cat;
+  block.innerHTML = `<div class="cat-title"><h2>${cat}</h2><span class="pill">${
+    cat === '增删改' ? '改变原数组' : cat === '查找' ? '返回位置/布尔' :
+    cat === '遍历生成' ? '返回新数组/值' : '重组与排序'
+  }</span><span class="line"></span></div><div class="grid"></div>`;
+  const grid = block.querySelector('.grid');
+
+  METHODS.filter(m => m.cat === cat).forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card._init = m.init();
+    card._arr = clone(card._init);
+    card.innerHTML = `
+      <div class="card-head">
+        <span class="method">${m.name}</span>
+        <span class="tag ${m.mut ? 'mut' : 'non'}">${m.mut ? '改原数组' : '不改原数组'}</span>
+      </div>
+      <p class="desc">${m.desc}</p>
+      <div class="viz"></div>
+      <div class="actions">
+        <button class="run">▶ 运行</button>
+        <button class="reset">↺ 重置</button>
+      </div>
+      <span class="result-text"></span>
+      <pre class="code">${m.code}</pre>
+    `;
+    grid.appendChild(card);
+
+    // 初始渲染
+    if (m.id === 'flat') renderNested(card.querySelector('.viz'), clone(card._init));
+    else renderArray(card.querySelector('.viz'), card._arr);
+
+    const runBtn = card.querySelector('.run');
+    const resetBtn = card.querySelector('.reset');
+    runBtn.onclick = async () => {
+      // 清除之前可能生成的“结果”副区块（保留第一个 .viz）
+      card.querySelectorAll('.viz').forEach((v, i) => { if (i > 0) v.remove(); });
+      runBtn.disabled = true;
+      await m.run(card);
+      runBtn.disabled = false;
+    };
+    resetBtn.onclick = () => {
+      card._arr = clone(card._init);
+      card.querySelectorAll('.viz').forEach((v, i) => { if (i > 0) v.remove(); });
+      setResult(card, '');
+      if (m.id === 'flat') renderNested(card.querySelector('.viz'), clone(card._init));
+      else renderArray(card.querySelector('.viz'), card._arr);
+    };
+  });
+
+  catalog.appendChild(block);
+});
+</script>
+</body>
+</html>

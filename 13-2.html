@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lucide 图标</title>
+  <script src="./cdn/lucide/lucide.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: #f2f5fa;
+      color: #24292f;
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .tip {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .tip code {
+      background: #e8edf6;
+      color: #0f766e;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+    }
+
+    .demo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 26px;
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 26px;
+    }
+
+    .demo .group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .demo .label {
+      font-size: 13px;
+      color: #8a94a6;
+    }
+
+    .demo svg {
+      color: #0f766e;
+    }
+
+    .demo .size-s {
+      width: 16px;
+      height: 16px;
+    }
+
+    .demo .size-l {
+      width: 42px;
+      height: 42px;
+    }
+
+    .demo .color-red {
+      color: #ef4444;
+    }
+
+    .demo .color-green {
+      color: #16a34a;
+    }
+
+    .demo .color-orange {
+      color: #f59e0b;
+    }
+
+    .demo .stroke-thin {
+      stroke-width: 1;
+    }
+
+    .demo .stroke-fat {
+      stroke-width: 3.2;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 14px;
+    }
+
+    .item {
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 12px;
+      padding: 20px 8px 14px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .item:hover {
+      transform: translateY(-4px);
+      border-color: #14b8a6;
+      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+    }
+
+    .item svg {
+      width: 30px;
+      height: 30px;
+      color: #0f766e;
+      stroke-width: 2;
+      transition: transform 0.25s ease;
+    }
+
+    .item:hover svg {
+      transform: scale(1.15);
+    }
+
+    .item .name {
+      display: block;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .item .cls {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #9aa4b2;
+      font-family: Consolas, monospace;
+      word-break: break-all;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 26px 0 14px;
+      padding-left: 10px;
+      border-left: 4px solid #0f766e;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 13px;
+      color: #8a94a6;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Lucide 图标（SVG 方式）</h1>
+  <p class="tip">
+    通过 <code>&lt;i data-lucide="house"&gt;&lt;/i&gt;</code> 声明，<code>lucide.createIcons()</code> 会把每个占位元素替换成内联
+    <code>&lt;svg&gt;</code>，可用 width、height、stroke 控制。
+  </p>
+
+  <div class="demo">
+    <div class="group">
+      <span class="label">大小</span>
+      <i data-lucide="heart" class="size-s"></i>
+      <i data-lucide="heart"></i>
+      <i data-lucide="heart" class="size-l"></i>
+    </div>
+    <div class="group">
+      <span class="label">颜色</span>
+      <i data-lucide="circle-check" class="color-red"></i>
+      <i data-lucide="circle-check" class="color-green"></i>
+      <i data-lucide="circle-check" class="color-orange"></i>
+    </div>
+    <div class="group">
+      <span class="label">描边</span>
+      <i data-lucide="pen-tool" class="stroke-thin"></i>
+      <i data-lucide="pen-tool"></i>
+      <i data-lucide="pen-tool" class="stroke-fat"></i>
+    </div>
+    <div class="group">
+      <span class="label">旋转</span>
+      <i data-lucide="loader-circle" style="animation: spin 1s linear infinite;"></i>
+      <i data-lucide="refresh-cw" style="animation: spin 2s linear infinite;"></i>
+      <i data-lucide="arrow-up-right"></i>
+    </div>
+  </div>
+
+  <h2>常用图标</h2>
+  <div class="grid">
+    <div class="item"><i data-lucide="house"></i><span class="name">首页</span><span class="cls">data-lucide="house"</span></div>
+    <div class="item"><i data-lucide="heart"></i><span class="name">喜欢</span><span class="cls">data-lucide="heart"</span></div>
+    <div class="item"><i data-lucide="star"></i><span class="name">收藏</span><span class="cls">data-lucide="star"</span></div>
+    <div class="item"><i data-lucide="user"></i><span class="name">用户</span><span class="cls">data-lucide="user"</span></div>
+    <div class="item"><i data-lucide="settings"></i><span class="name">设置</span><span class="cls">data-lucide="settings"</span></div>
+    <div class="item"><i data-lucide="search"></i><span class="name">搜索</span><span class="cls">data-lucide="search"</span></div>
+    <div class="item"><i data-lucide="bell"></i><span class="name">通知</span><span class="cls">data-lucide="bell"</span></div>
+    <div class="item"><i data-lucide="mail"></i><span class="name">邮件</span><span class="cls">data-lucide="mail"</span></div>
+    <div class="item"><i data-lucide="camera"></i><span class="name">相机</span><span class="cls">data-lucide="camera"</span></div>
+    <div class="item"><i data-lucide="music"></i><span class="name">音乐</span><span class="cls">data-lucide="music"</span></div>
+    <div class="item"><i data-lucide="video"></i><span class="name">视频</span><span class="cls">data-lucide="video"</span></div>
+    <div class="item"><i data-lucide="image"></i><span class="name">图片</span><span class="cls">data-lucide="image"</span></div>
+    <div class="item"><i data-lucide="calendar"></i><span class="name">日历</span><span class="cls">data-lucide="calendar"</span></div>
+    <div class="item"><i data-lucide="clock"></i><span class="name">时间</span><span class="cls">data-lucide="clock"</span></div>
+    <div class="item"><i data-lucide="file-text"></i><span class="name">文件</span><span class="cls">data-lucide="file-text"</span></div>
+    <div class="item"><i data-lucide="folder"></i><span class="name">文件夹</span><span class="cls">data-lucide="folder"</span></div>
+    <div class="item"><i data-lucide="download"></i><span class="name">下载</span><span class="cls">data-lucide="download"</span></div>
+    <div class="item"><i data-lucide="trash-2"></i><span class="name">删除</span><span class="cls">data-lucide="trash-2"</span></div>
+    <div class="item"><i data-lucide="pencil"></i><span class="name">编辑</span><span class="cls">data-lucide="pencil"</span></div>
+    <div class="item"><i data-lucide="message-circle"></i><span class="name">评论</span><span class="cls">data-lucide="message-circle"</span></div>
+    <div class="item"><i data-lucide="phone"></i><span class="name">电话</span><span class="cls">data-lucide="phone"</span></div>
+    <div class="item"><i data-lucide="map-pin"></i><span class="name">位置</span><span class="cls">data-lucide="map-pin"</span></div>
+    <div class="item"><i data-lucide="lock"></i><span class="name">锁定</span><span class="cls">data-lucide="lock"</span></div>
+    <div class="item"><i data-lucide="shopping-cart"></i><span class="name">购物车</span><span class="cls">data-lucide="shopping-cart"</span></div>
+    <div class="item"><i data-lucide="cloud"></i><span class="name">云</span><span class="cls">data-lucide="cloud"</span></div>
+    <div class="item"><i data-lucide="code"></i><span class="name">代码</span><span class="cls">data-lucide="code"</span></div>
+    <div class="item"><i data-lucide="laptop"></i><span class="name">笔记本</span><span class="cls">data-lucide="laptop"</span></div>
+    <div class="item"><i data-lucide="smartphone"></i><span class="name">手机</span><span class="cls">data-lucide="smartphone"</span></div>
+    <div class="item"><i data-lucide="headphones"></i><span class="name">耳机</span><span class="cls">data-lucide="headphones"</span></div>
+    <div class="item"><i data-lucide="play"></i><span class="name">播放</span><span class="cls">data-lucide="play"</span></div>
+    <div class="item"><i data-lucide="check"></i><span class="name">完成</span><span class="cls">data-lucide="check"</span></div>
+    <div class="item"><i data-lucide="x"></i><span class="name">关闭</span><span class="cls">data-lucide="x"</span></div>
+    <div class="item"><i data-lucide="arrow-right"></i><span class="name">向右</span><span class="cls">data-lucide="arrow-right"</span></div>
+    <div class="item"><i data-lucide="shield"></i><span class="name">安全</span><span class="cls">data-lucide="shield"</span></div>
+    <div class="item"><i data-lucide="eye"></i><span class="name">可见</span><span class="cls">data-lucide="eye"</span></div>
+    <div class="item"><i data-lucide="bookmark"></i><span class="name">书签</span><span class="cls">data-lucide="bookmark"</span></div>
+    <div class="item"><i data-lucide="thumbs-up"></i><span class="name">点赞</span><span class="cls">data-lucide="thumbs-up"</span></div>
+    <div class="item"><i data-lucide="smile"></i><span class="name">表情</span><span class="cls">data-lucide="smile"</span></div>
+    <div class="item"><i data-lucide="wifi"></i><span class="name">无线</span><span class="cls">data-lucide="wifi"</span></div>
+    <div class="item"><i data-lucide="key-round"></i><span class="name">密钥</span><span class="cls">data-lucide="key-round"</span></div>
+  </div>
+
+  <h2>品牌与工具图标</h2>
+  <div class="grid">
+    <div class="item"><i data-lucide="github"></i><span class="name">GitHub</span><span class="cls">data-lucide="github"</span></div>
+    <div class="item"><i data-lucide="git-branch"></i><span class="name">分支</span><span class="cls">data-lucide="git-branch"</span></div>
+    <div class="item"><i data-lucide="figma"></i><span class="name">Figma</span><span class="cls">data-lucide="figma"</span></div>
+    <div class="item"><i data-lucide="slack"></i><span class="name">Slack</span><span class="cls">data-lucide="slack"</span></div>
+    <div class="item"><i data-lucide="terminal"></i><span class="name">终端</span><span class="cls">data-lucide="terminal"</span></div>
+    <div class="item"><i data-lucide="database"></i><span class="name">数据库</span><span class="cls">data-lucide="database"</span></div>
+    <div class="item"><i data-lucide="server"></i><span class="name">服务器</span><span class="cls">data-lucide="server"</span></div>
+    <div class="item"><i data-lucide="cpu"></i><span class="name">芯片</span><span class="cls">data-lucide="cpu"</span></div>
+  </div>
+
+  <footer>本地资源：./cdn/lucide/lucide.min.js（lucide.createIcons() 把占位元素渲染成内联 SVG）</footer>
+
+  <script>
+    lucide.createIcons();
+
+    const style = document.createElement("style");
+    style.textContent = "@keyframes spin { to { transform: rotate(360deg); } }";
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

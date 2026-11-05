@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript基本数据类型演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #fff;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .type-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .type-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+        }
+
+        .type-card.string { border-left-color: #e74c3c; }
+        .type-card.number { border-left-color: #3498db; }
+        .type-card.boolean { border-left-color: #2ecc71; }
+        .type-card.null { border-left-color: #95a5a6; }
+        .type-card.undefined { border-left-color: #f39c12; }
+        .type-card.symbol { border-left-color: #9b59b6; }
+
+        .type-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .type-title .en {
+            font-size: 0.7em;
+            color: #888;
+            font-weight: normal;
+            background: #f0f0f0;
+            padding: 3px 10px;
+            border-radius: 15px;
+        }
+
+        .type-desc {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .demo-block {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+        }
+
+        .demo-label {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            white-space: pre;
+            margin-bottom: 8px;
+        }
+
+        .output {
+            background: #e8f5e9;
+            border-left: 3px solid #2ecc71;
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-family: "Consolas", monospace;
+            font-size: 0.9em;
+            color: #2c3e50;
+        }
+
+        .output .label {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            color: #fff;
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>JavaScript 6 种基本数据类型</h1>
+            <p>朱泊旭的 JavaScript 项目 — 基本数据类型演示</p>
+        </header>
+
+        <div class="type-card string">
+            <div class="type-title">1. 字符串 String <span class="en">typeof → "string"</span></div>
+            <div class="type-desc">由零个或多个字符组成的有序序列，可以使用单引号、双引号或反引号（模板字符串）来表示。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var str1 = "你好";
+var str2 = 'JavaScript';
+var str3 = `欢迎 ${str2}`;</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-string"></div>
+            </div>
+        </div>
+
+        <div class="type-card number">
+            <div class="type-title">2. 数字 Number <span class="en">typeof → "number"</span></div>
+            <div class="type-desc">包括整数和浮点数，还有特殊值 NaN（Not a Number）和 Infinity（无穷大）。所有数字都是 64 位浮点数。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var num1 = 42;
+var num2 = 3.14;
+var num3 = -100;
+var num4 = 1e6;</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-number"></div>
+            </div>
+        </div>
+
+        <div class="type-card boolean">
+            <div class="type-title">3. 布尔值 Boolean <span class="en">typeof → "boolean"</span></div>
+            <div class="type-desc">只有两个取值：true 和 false，常用于条件判断。注意：0、""、null、undefined、NaN 在条件中都会转换为 false。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var isOnline = true;
+var isError = false;
+var hasValue = Boolean("hello");
+var noValue = Boolean(0);</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-boolean"></div>
+            </div>
+        </div>
+
+        <div class="type-card null">
+            <div class="type-title">4. 空值 Null <span class="en">typeof → "object"（历史遗留bug）</span></div>
+            <div class="type-desc">表示一个空对象指针，专门用来表示"无值"。注意：typeof null 返回 "object" 是 JavaScript 的一个历史遗留 bug。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var empty = null;
+console.log(empty);
+console.log(empty === null);</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-null"></div>
+            </div>
+        </div>
+
+        <div class="type-card undefined">
+            <div class="type-title">5. 未定义 Undefined <span class="en">typeof → "undefined"</span></div>
+            <div class="type-desc">表示变量已声明但尚未赋值，或者访问不存在的对象属性。undefined 也是全局对象的一个属性。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var x;
+var obj = {};
+console.log(x);
+console.log(obj.foo);
+console.log(undefined === x);</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-undefined"></div>
+            </div>
+        </div>
+
+        <div class="type-card symbol">
+            <div class="type-title">6. 符号 Symbol <span class="en">typeof → "symbol"</span></div>
+            <div class="type-desc">ES6 新增的基本类型，表示唯一的、不可变的标识符。常用于对象属性键，确保属性名不会冲突。</div>
+            <div class="demo-block">
+                <div class="demo-label">代码示例</div>
+                <div class="code">var sym1 = Symbol();
+var sym2 = Symbol("描述");
+var sym3 = Symbol("描述");
+console.log(sym2 === sym3); // false</div>
+                <div class="demo-label">运行结果</div>
+                <div class="output" id="output-symbol"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 朱泊旭 | JavaScript 基本数据类型演示</p>
+        </footer>
+    </div>
+
+    <script>
+        function show(id, html) {
+            document.getElementById(id).innerHTML = html;
+        }
+
+        var str1 = "你好";
+        var str2 = 'JavaScript';
+        var str3 = `欢迎 ${str2}`;
+        show('output-string',
+            '<span class="label">str1</span> = ' + str1 + ' | typeof → ' + typeof str1 + '<br>' +
+            '<span class="label">str2</span> = ' + str2 + ' | typeof → ' + typeof str2 + '<br>' +
+            '<span class="label">str3</span> = ' + str3 + ' | typeof → ' + typeof str3
+        );
+
+        var num1 = 42;
+        var num2 = 3.14;
+        var num3 = -100;
+        var num4 = 1e6;
+        show('output-number',
+            '<span class="label">num1</span> = ' + num1 + ' | typeof → ' + typeof num1 + '<br>' +
+            '<span class="label">num2</span> = ' + num2 + ' | typeof → ' + typeof num2 + '<br>' +
+            '<span class="label">num3</span> = ' + num3 + ' | typeof → ' + typeof num3 + '<br>' +
+            '<span class="label">num4</span> = ' + num4 + ' | typeof → ' + typeof num4
+        );
+
+        var isOnline = true;
+        var isError = false;
+        var hasValue = Boolean("hello");
+        var noValue = Boolean(0);
+        show('output-boolean',
+            '<span class="label">isOnline</span> = ' + isOnline + ' | typeof → ' + typeof isOnline + '<br>' +
+            '<span class="label">isError</span> = ' + isError + ' | typeof → ' + typeof isError + '<br>' +
+            '<span class="label">Boolean("hello")</span> = ' + hasValue + '<br>' +
+            '<span class="label">Boolean(0)</span> = ' + noValue
+        );
+
+        var empty = null;
+        show('output-null',
+            '<span class="label">empty</span> = ' + empty + ' | typeof → ' + typeof empty + '<br>' +
+            '<span class="label">empty === null</span> = ' + (empty === null) + '<br>' +
+            '<span class="label">提示</span>: typeof null 是 JavaScript 的历史遗留 bug'
+        );
+
+        var x;
+        var obj = {};
+        show('output-undefined',
+            '<span class="label">x</span> = ' + x + ' | typeof → ' + typeof x + '<br>' +
+            '<span class="label">obj.foo</span> = ' + obj.foo + '<br>' +
+            '<span class="label">undefined === x</span> = ' + (undefined === x)
+        );
+
+        var sym1 = Symbol();
+        var sym2 = Symbol("描述");
+        var sym3 = Symbol("描述");
+        show('output-symbol',
+            '<span class="label">sym1</span> = ' + sym1.toString() + ' | typeof → ' + typeof sym1 + '<br>' +
+            '<span class="label">sym2</span> = ' + sym2.toString() + ' | typeof → ' + typeof sym2 + '<br>' +
+            '<span class="label">sym2 === sym3</span> = ' + (sym2 === sym3) + ' (每个 Symbol 都是唯一的)'
+        );
+    </script>
+</body>
+</html>

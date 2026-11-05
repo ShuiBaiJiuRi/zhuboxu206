@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-6 · Promise + async/await 异步演示：包饺子</title>
+<style>
+  :root {
+    --bg-1:#07111f; --bg-2:#101b2d; --panel:rgba(15,23,42,0.72);
+    --line:rgba(255,255,255,0.08); --text:#e5eefc; --muted:#9bb0c9;
+    --blue:#60a5fa; --cyan:#67e8f9; --purple:#a78bfa; --pink:#f9a8d4;
+    --green:#34d399; --amber:#fbbf24; --red:#fb7185; --shadow:rgba(2,6,23,0.6); --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:radial-gradient(circle at top left,rgba(96,165,250,0.2),transparent 28%),
+      radial-gradient(circle at bottom right,rgba(167,139,250,0.2),transparent 30%),
+      linear-gradient(135deg,var(--bg-1),var(--bg-2));color:var(--text);}
+  body{display:flex;justify-content:center;padding:40px 20px 80px;}
+  .page{width:min(1180px,100%);background:rgba(10,16,28,0.7);border:1px solid var(--line);
+    border-radius:24px;box-shadow:0 24px 90px var(--shadow);backdrop-filter:blur(12px);overflow:hidden;}
+  .hero{position:relative;padding:46px 48px 26px;background:
+      linear-gradient(120deg,rgba(96,165,250,0.18),rgba(167,139,250,0.12)),rgba(15,23,42,0.5);
+    border-bottom:1px solid var(--line);}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(12px);opacity:.8;}
+  .hero::before{width:220px;height:220px;right:8%;top:-50px;background:rgba(103,232,249,0.18);}
+  .hero::after{width:180px;height:180px;left:6%;bottom:-30px;background:rgba(249,168,212,0.16);}
+  .brand{position:relative;z-index:1;display:flex;align-items:center;gap:18px;margin-bottom:14px;}
+  .logo{width:70px;height:70px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:28px;color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--purple));
+    box-shadow:0 16px 30px rgba(103,232,249,0.25);}
+  .hero h1{margin:0;font-size:clamp(1.7rem,2.5vw,2.6rem);letter-spacing:1px;}
+  .hero .sub{position:relative;z-index:1;margin:0;max-width:900px;color:var(--muted);line-height:1.8;}
+  .content{padding:26px 48px 40px;}
+
+  /* 工具栏 */
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:22px;}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,0.1);color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:10px 18px;border-radius:10px;font-size:0.9rem;transition:all .18s;}
+  .btn:hover{border-color:rgba(103,232,249,0.4);transform:translateY(-1px);}
+  .btn.primary{color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--blue));border-color:transparent;font-weight:700;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+  .toolbar label{color:var(--muted);font-size:0.85rem;}
+  select{background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:9px 10px;border-radius:10px;font-size:0.86rem;outline:none;}
+  .total{margin-left:auto;padding:8px 16px;border-radius:999px;font-size:0.86rem;font-weight:700;
+    color:var(--cyan);background:rgba(103,232,249,0.1);border:1px solid rgba(103,232,249,0.3);
+    font-family:"Cascadia Code",Consolas,monospace;}
+
+  .grid2{display:grid;grid-template-columns:1.18fr .82fr;gap:22px;align-items:start;}
+  @media (max-width:940px){.grid2{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .panel h2{margin:0 0 16px;font-size:1.05rem;display:flex;align-items:center;gap:8px;}
+  .panel h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+
+  /* 流程步骤 */
+  .stage{position:relative;border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    background:rgba(2,6,23,0.35);transition:border-color .25s,background .25s,transform .25s;}
+  .stage.waiting{opacity:.62;}
+  .stage.running{border-color:rgba(103,232,249,0.55);background:rgba(103,232,249,0.07);
+    box-shadow:0 0 0 1px rgba(103,232,249,0.15),0 8px 24px rgba(2,6,23,0.5);}
+  .stage.done{border-color:rgba(52,211,153,0.45);background:rgba(52,211,153,0.06);}
+  .sh{display:flex;align-items:center;gap:9px;}
+  .sh .no{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:0.72rem;font-weight:800;background:rgba(148,163,184,0.15);color:var(--muted);flex:none;}
+  .stage.running .sh .no{background:var(--cyan);color:#08111d;}
+  .stage.done .sh .no{background:var(--green);color:#07130d;}
+  .sh b{font-size:0.95rem;font-weight:600;}
+  .sh .dur{color:var(--muted);font-size:0.78rem;font-family:"Cascadia Code",Consolas,monospace;}
+  .badge{margin-left:auto;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:999px;flex:none;}
+  .badge.wait{background:rgba(148,163,184,0.12);color:var(--muted);border:1px solid rgba(148,163,184,0.25);}
+  .badge.run{background:rgba(103,232,249,0.15);color:var(--cyan);border:1px solid rgba(103,232,249,0.4);}
+  .badge.done{background:rgba(52,211,153,0.15);color:var(--green);border:1px solid rgba(52,211,153,0.4);}
+
+  .bar{height:6px;border-radius:999px;background:rgba(2,6,23,0.7);overflow:hidden;margin-top:10px;}
+  .bar i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--blue),var(--cyan));}
+  .stage.done .bar i{background:linear-gradient(90deg,var(--green),#6ee7b7);}
+
+  .arrow{text-align:center;color:var(--muted);font-size:0.9rem;line-height:1;margin:6px 0;opacity:.6;}
+
+  /* 并行块 */
+  .parallel{border:1px dashed rgba(167,139,250,0.4);border-radius:14px;padding:12px;background:rgba(167,139,250,0.05);}
+  .ptitle{font-size:0.76rem;font-weight:700;color:var(--purple);letter-spacing:.5px;margin-bottom:10px;
+    display:flex;align-items:center;gap:8px;}
+  .ptitle::after{content:"";flex:1;height:1px;background:rgba(167,139,250,0.25);}
+  .prow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:520px){.prow{grid-template-columns:1fr;}}
+  .prow .stage{background:rgba(2,6,23,0.45);}
+  .prow .bar i{background:linear-gradient(90deg,var(--purple),var(--pink));}
+  .prow .stage.done .bar i{background:linear-gradient(90deg,var(--green),#6ee7b7);}
+
+  /* 完成横幅 */
+  .done-banner{display:none;margin-top:14px;text-align:center;padding:14px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(52,211,153,0.18),rgba(103,232,249,0.12));
+    border:1px solid rgba(52,211,153,0.4);font-weight:700;color:var(--green);font-size:1rem;}
+  .done-banner.show{display:block;animation:pop .5s ease-out;}
+  @keyframes pop{0%{transform:scale(.94);opacity:0;}100%{transform:scale(1);opacity:1;}}
+
+  /* 代码 */
+  .codelines{font-family:"Cascadia Code",Consolas,monospace;font-size:0.79rem;line-height:1.75;
+    background:rgba(2,6,23,0.6);border:1px solid var(--line);border-radius:12px;padding:10px 0;overflow:auto;}
+  .cl{display:flex;padding:1px 12px 1px 0;border-left:2px solid transparent;
+    color:#cfe3ff;white-space:pre;transition:background .2s,border-color .2s;}
+  .cl .ln{color:#41546b;width:32px;text-align:right;padding-right:12px;flex:none;user-select:none;}
+  .cl.active{background:rgba(103,232,249,0.1);border-left-color:var(--cyan);}
+  .cl.active .ln{color:var(--cyan);}
+  .k{color:#c792ea;} .f{color:#82aaff;} .c{color:#5f7c9a;} .n{color:#f78c6c;} .s{color:#c3e88d;}
+
+  /* 日志 */
+  .logbox{margin-top:22px;}
+  ul.log{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.82rem;line-height:1.7;}
+  ul.log li{display:flex;gap:12px;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,0.05);}
+  ul.log li:last-child{border-bottom:none;}
+  ul.log .t{color:var(--muted);flex:none;width:62px;text-align:right;}
+  ul.log li.ok .m{color:var(--green);}
+  ul.log li.info .m{color:var(--text);}
+  ul.log li.step .m{color:var(--cyan);}
+  ul.log li.final .m{color:var(--amber);font-weight:700;}
+
+  .hint{color:var(--muted);font-size:0.82rem;line-height:1.8;margin:16px 0 0;}
+  .footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:0.85rem;}
+  @media (max-width:760px){.hero,.content{padding-left:20px;padding-right:20px;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">🥟</div>
+      <div><h1>异步演示：包饺子</h1></div>
+    </div>
+    <p class="sub">
+      用 <b>Promise</b> + <b>async / await</b> 把一个真实的流程写成异步代码：先<b>买原料</b>（6s），再去<b>取原料</b>（2s），
+      然后<b>同时</b>和面（4s）与和馅（5s）——用 <b>Promise.all</b> 让两件事并行；两者都完成后<b>包饺子</b>（3s），最后<b>吃饺子</b>（2s）。
+      每一步都用 <b>setTimeout</b> 模拟耗时，页面上实时显示流程进度。
+    </p>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <button class="btn primary" id="startBtn">▶ 开始包饺子</button>
+      <button class="btn" id="resetBtn">↺ 重置</button>
+      <label for="speed">速度</label>
+      <select id="speed">
+        <option value="1">1×（真实演示 18s）</option>
+        <option value="2">2×</option>
+        <option value="5">5×</option>
+      </select>
+      <span class="total" id="totalEl">总用时 0.0s</span>
+    </div>
+
+    <div class="grid2">
+      <!-- 左：流程 -->
+      <section class="panel">
+        <h2><span class="dot"></span>流程</h2>
+
+        <div class="stage waiting" id="s-buy">
+          <div class="sh"><span class="no">1</span><b>买原料</b><span class="dur">6s</span><span class="badge wait">等待</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="stage waiting" id="s-pick">
+          <div class="sh"><span class="no">2</span><b>取原料</b><span class="dur">2s</span><span class="badge wait">等待</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="parallel">
+          <div class="ptitle">同时进行 · Promise.all</div>
+          <div class="prow">
+            <div class="stage waiting" id="s-knead">
+              <div class="sh"><span class="no">3</span><b>和面</b><span class="dur">4s</span><span class="badge wait">等待</span></div>
+              <div class="bar"><i></i></div>
+            </div>
+            <div class="stage waiting" id="s-fill">
+              <div class="sh"><span class="no">3</span><b>和馅</b><span class="dur">5s</span><span class="badge wait">等待</span></div>
+              <div class="bar"><i></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="stage waiting" id="s-wrap">
+          <div class="sh"><span class="no">4</span><b>包饺子</b><span class="dur">3s</span><span class="badge wait">等待</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="stage waiting" id="s-eat">
+          <div class="sh"><span class="no">5</span><b>吃饺子</b><span class="dur">2s</span><span class="badge wait">等待</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+
+        <div class="done-banner" id="doneBanner">🎉 热腾腾的饺子出锅啦，开吃！</div>
+      </section>
+
+      <!-- 右：代码 -->
+      <section class="panel">
+        <h2><span class="dot"></span>核心代码</h2>
+        <div class="codelines" id="codeLines">
+          <div class="cl" data-l="1"><span class="ln">1</span><span><span class="k">async function</span> <span class="f">makeDumplings</span>() {</span></div>
+          <div class="cl" data-l="2"><span class="ln">2</span><span>  <span class="k">await</span> <span class="f">buyIngredients</span>();      <span class="c">// 买原料 6s</span></span></div>
+          <div class="cl" data-l="3"><span class="ln">3</span><span>  <span class="k">await</span> <span class="f">pickupIngredients</span>();   <span class="c">// 取原料 2s</span></span></div>
+          <div class="cl" data-l="4"><span class="ln">4</span><span>  <span class="k">await</span> <span class="f">Promise</span>.all([            <span class="c">// 同时开始 ↓</span></span></div>
+          <div class="cl" data-l="5"><span class="ln">5</span><span>    <span class="f">kneadDough</span>(),               <span class="c">// 和面 4s</span></span></div>
+          <div class="cl" data-l="6"><span class="ln">6</span><span>    <span class="f">makeFilling</span>()               <span class="c">// 和馅 5s</span></span></div>
+          <div class="cl" data-l="7"><span class="ln">7</span><span>  ]);</span></div>
+          <div class="cl" data-l="8"><span class="ln">8</span><span>  <span class="k">await</span> <span class="f">wrapDumplings</span>();        <span class="c">// 包饺子 3s</span></span></div>
+          <div class="cl" data-l="9"><span class="ln">9</span><span>  <span class="k">await</span> <span class="f">eatDumplings</span>();          <span class="c">// 吃饺子 2s</span></span></div>
+          <div class="cl" data-l="10"><span class="ln">10</span><span>  <span class="f">log</span>(<span class="s">'全部完成 🥟'</span>);</span></div>
+          <div class="cl" data-l="11"><span class="ln">11</span><span>}</span></div>
+          <div class="cl" data-l="12"><span class="ln">12</span><span></span></div>
+          <div class="cl" data-l="13"><span class="ln">13</span><span><span class="c">// 用 setTimeout 把"耗时"包装成 Promise</span></span></div>
+          <div class="cl" data-l="14"><span class="ln">14</span><span><span class="k">const</span> <span class="f">wait</span> = ms =&gt; <span class="k">new</span> <span class="f">Promise</span>(r =&gt; <span class="f">setTimeout</span>(r, ms));</span></div>
+        </div>
+        <p class="hint">高亮的行表示当前正在执行的那一步。注意第 4—7 行：<b>Promise.all</b> 里的两个任务会同时开始，全部完成后才继续往下走。</p>
+      </section>
+    </div>
+
+    <!-- 日志 -->
+    <section class="panel logbox">
+      <h2><span class="dot"></span>执行日志</h2>
+      <ul class="log" id="log"><li class="info"><span class="t">0.0s</span><span class="m">等待开始…</span></li></ul>
+    </section>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-6 Promise / async-await 异步流程</div>
+  </main>
+</div>
+
+<script>
+/* ============ 基础工具 ============ */
+const $ = id => document.getElementById(id);
+const logEl   = $('log');
+const totalEl = $('totalEl');
+const startBtn= $('startBtn');
+const speedEl = $('speed');
+
+let speed = 1;            // 倍速
+let aborted = false;      // 重置时置为 true，用于中断流程
+let timers = [];          // 记录所有 setTimeout，便于重置时清除
+let totalIv = null;       // 总用时更新定时器
+let runStart = 0;
+
+/* 用 setTimeout 模拟耗时，返回 Promise */
+function wait(ms){
+  return new Promise(resolve => {
+    const id = setTimeout(resolve, ms / speed);
+    timers.push(id);
+  });
+}
+
+/* 当前模拟耗时（秒） */
+const elapsed = () => (performance.now() - runStart) / 1000 / speed;
+
+/* ============ 页面更新 ============ */
+function log(msg, type='info'){
+  const li = document.createElement('li');
+  li.className = type;
+  li.innerHTML = '<span class="t">' + elapsed().toFixed(1) + 's</span><span class="m">' + msg + '</span>';
+  logEl.appendChild(li);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setStage(id, state){
+  const el = $(id);
+  el.classList.remove('waiting','running','done');
+  el.classList.add(state);
+  const badge = el.querySelector('.badge');
+  badge.className = 'badge ' + (state === 'running' ? 'run' : state === 'done' ? 'done' : 'wait');
+  badge.textContent = state === 'running' ? '进行中' : state === 'done' ? '完成' : '等待';
+}
+
+/* 高亮代码行，可传单个或数组 */
+function setLine(nums){
+  document.querySelectorAll('.cl').forEach(c => c.classList.remove('active'));
+  if(nums == null) return;
+  (Array.isArray(nums) ? nums : [nums]).forEach(n => {
+    const el = document.querySelector('.cl[data-l="' + n + '"]');
+    if(el) el.classList.add('active');
+  });
+}
+
+/* 执行单个步骤：进度条动画 + 等待 */
+async function runStage(id, ms, label){
+  if(aborted) return false;
+  setStage(id, 'running');
+  const bar = $(id).querySelector('.bar i');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  void bar.offsetWidth;
+  bar.style.transition = 'width ' + (ms / speed) + 'ms linear';
+  bar.style.width = '100%';
+  await wait(ms);
+  if(aborted) return false;
+  setStage(id, 'done');
+  return true;
+}
+
+/* ============ 主流程（Promise + async/await） ============ */
+async function makeDumplings(){
+  aborted = false;
+  timers = [];
+  startBtn.disabled = true;
+  speedEl.disabled = true;
+  runStart = performance.now();
+
+  totalIv = setInterval(() => {
+    totalEl.textContent = '总用时 ' + elapsed().toFixed(1) + 's';
+  }, 100);
+
+  // 1. 买原料 6s
+  setLine(2);
+  log('🥣 出发去买原料…', 'step');
+  if(!await runStage('s-buy', 6000, '买原料')) return cleanup();
+  log('✅ 原料买好了（6s）', 'ok');
+
+  // 2. 取原料 2s
+  setLine(3);
+  log('📦 去取原料…', 'step');
+  if(!await runStage('s-pick', 2000, '取原料')) return cleanup();
+  log('✅ 原料取回来了（2s）', 'ok');
+
+  // 3. 同时和面 + 和馅（Promise.all 并行）
+  setLine([4, 5, 6]);
+  log('⚡ 原料齐了，同时开始「和面」和「和馅」', 'step');
+
+  const knead = (async () => {
+    if(!await runStage('s-knead', 4000, '和面')) return false;
+    log('✅ 面和好了（4s）', 'ok');
+    return true;
+  })();
+  const fill = (async () => {
+    if(!await runStage('s-fill', 5000, '和馅')) return false;
+    log('✅ 馅和好了（5s）', 'ok');
+    return true;
+  })();
+
+  const results = await Promise.all([knead, fill]);
+  if(aborted || results.includes(false)) return cleanup();
+  log('✅ 面 + 馅 都准备好了（并行只花了 5s）', 'ok');
+
+  // 4. 包饺子 3s
+  setLine(8);
+  log('🥟 开始包饺子…', 'step');
+  if(!await runStage('s-wrap', 3000, '包饺子')) return cleanup();
+  log('✅ 饺子包完了（3s）', 'ok');
+
+  // 5. 吃饺子 2s
+  setLine(9);
+  log('🍽 开吃！', 'step');
+  if(!await runStage('s-eat', 2000, '吃饺子')) return cleanup();
+  log('✅ 吃完了（2s）', 'ok');
+
+  // 完成
+  setLine(10);
+  log('🎉 全部完成 🥟', 'final');
+  $('doneBanner').classList.add('show');
+  cleanup();
+}
+
+function cleanup(){
+  clearInterval(totalIv);
+  totalIv = null;
+  totalEl.textContent = '总用时 ' + elapsed().toFixed(1) + 's';
+  startBtn.disabled = false;
+  speedEl.disabled = false;
+}
+
+/* ============ 重置 ============ */
+function resetAll(){
+  aborted = true;
+  timers.forEach(clearTimeout);
+  timers = [];
+  clearInterval(totalIv);
+  totalIv = null;
+
+  document.querySelectorAll('.stage').forEach(el => {
+    el.classList.remove('waiting','running','done');
+    el.classList.add('waiting');
+    const badge = el.querySelector('.badge');
+    badge.className = 'badge wait';
+    badge.textContent = '等待';
+    const bar = el.querySelector('.bar i');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+  });
+
+  $('doneBanner').classList.remove('show');
+  setLine(null);
+  logEl.innerHTML = '<li class="info"><span class="t">0.0s</span><span class="m">已重置，等待开始…</span></li>';
+  totalEl.textContent = '总用时 0.0s';
+  startBtn.disabled = false;
+  speedEl.disabled = false;
+}
+
+/* ============ 绑定 ============ */
+startBtn.onclick = () => {
+  if(startBtn.disabled) return;
+  resetAll();          // 先清干净
+  makeDumplings();
+};
+$('resetBtn').onclick = resetAll;
+speedEl.onchange = () => { speed = Number(speedEl.value) || 1; };
+</script>
+</body>
+</html>

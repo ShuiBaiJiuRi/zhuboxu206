@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Media Query Layout</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-width: 320px;
+      background: #f3f5f9;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 2em 1em;
+    }
+
+    .wrap {
+      width: min(1100px, 100%);
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 1.5em;
+      font-size: 2.2em;
+      color: #1f2937;
+      letter-spacing: 0.12em;
+    }
+
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25em;
+      padding: 0.5em;
+    }
+
+    .box {
+      flex: 1 1 calc(25% - 1.25em);
+      min-height: 160px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 1.5em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      box-shadow: 0 0.8em 1.5em rgba(0, 0, 0, 0.12);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .box:hover {
+      transform: translateY(-0.4em);
+      box-shadow: 0 1em 2em rgba(0, 0, 0, 0.18);
+    }
+
+    .box:nth-child(1) { background: linear-gradient(135deg, #ff6b6b, #fca5a5); }
+    .box:nth-child(2) { background: linear-gradient(135deg, #f59e0b, #fcd34d); }
+    .box:nth-child(3) { background: linear-gradient(135deg, #10b981, #34d399); }
+    .box:nth-child(4) { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+    .box:nth-child(5) { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+    .box:nth-child(6) { background: linear-gradient(135deg, #ec4899, #f9a8d4); }
+    .box:nth-child(7) { background: linear-gradient(135deg, #14b8a6, #5eead4); }
+    .box:nth-child(8) { background: linear-gradient(135deg, #f97316, #fdba74); }
+
+    @media (max-width: 980px) {
+      .box {
+        flex-basis: calc(33.333% - 1.25em);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .box {
+        flex-basis: calc(50% - 1.25em);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .box {
+        flex-basis: 100%;
+      }
+
+      .title {
+        font-size: 1.8em;
+        letter-spacing: 0.08em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="title">朱泊旭</h1>
+    <div class="grid">
+      <div class="box">1</div>
+      <div class="box">2</div>
+      <div class="box">3</div>
+      <div class="box">4</div>
+      <div class="box">5</div>
+      <div class="box">6</div>
+      <div class="box">7</div>
+      <div class="box">8</div>
+    </div>
+  </div>
+</body>
+</html>

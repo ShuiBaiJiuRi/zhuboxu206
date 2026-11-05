@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-4 · 远程接口测试工具（fetch）</title>
+<style>
+  :root {
+    --bg-1:#07111f; --bg-2:#101b2d; --panel:rgba(15,23,42,0.72);
+    --line:rgba(255,255,255,0.08); --text:#e5eefc; --muted:#9bb0c9;
+    --blue:#60a5fa; --cyan:#67e8f9; --purple:#a78bfa; --pink:#f9a8d4;
+    --green:#34d399; --amber:#fbbf24; --red:#fb7185; --shadow:rgba(2,6,23,0.6); --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:radial-gradient(circle at top left,rgba(96,165,250,0.2),transparent 28%),
+      radial-gradient(circle at bottom right,rgba(167,139,250,0.2),transparent 30%),
+      linear-gradient(135deg,var(--bg-1),var(--bg-2));color:var(--text);}
+  body{display:flex;justify-content:center;padding:40px 20px 80px;}
+  .page{width:min(1180px,100%);background:rgba(10,16,28,0.7);border:1px solid var(--line);
+    border-radius:24px;box-shadow:0 24px 90px var(--shadow);backdrop-filter:blur(12px);overflow:hidden;}
+  .hero{position:relative;padding:46px 48px 26px;background:
+      linear-gradient(120deg,rgba(96,165,250,0.18),rgba(167,139,250,0.12)),rgba(15,23,42,0.5);
+    border-bottom:1px solid var(--line);}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(12px);opacity:.8;}
+  .hero::before{width:220px;height:220px;right:8%;top:-50px;background:rgba(103,232,249,0.18);}
+  .hero::after{width:180px;height:180px;left:6%;bottom:-30px;background:rgba(249,168,212,0.16);}
+  .brand{position:relative;z-index:1;display:flex;align-items:center;gap:18px;margin-bottom:14px;}
+  .logo{width:70px;height:70px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--purple));
+    box-shadow:0 16px 30px rgba(103,232,249,0.25);font-family:"Cascadia Code",Consolas,monospace;}
+  .hero h1{margin:0;font-size:clamp(1.7rem,2.5vw,2.6rem);letter-spacing:1px;}
+  .hero .sub{position:relative;z-index:1;margin:0;max-width:880px;color:var(--muted);line-height:1.8;}
+  .content{padding:26px 48px 40px;}
+
+  /* 请求区 */
+  .req{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}
+  .method{background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:10px 12px;font-size:0.92rem;font-weight:700;outline:none;cursor:pointer;}
+  .method:focus{border-color:rgba(103,232,249,0.45);}
+  .url{flex:1;min-width:260px;background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:10px 14px;border-radius:10px;font-size:0.92rem;outline:none;font-family:"Cascadia Code",Consolas,monospace;}
+  .url:focus{border-color:rgba(103,232,249,0.45);}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,0.1);color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:10px 16px;border-radius:10px;font-size:0.88rem;transition:all .18s;}
+  .btn:hover{border-color:rgba(103,232,249,0.4);transform:translateY(-1px);}
+  .btn.primary{color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--blue));border-color:transparent;font-weight:700;}
+  .btn.ghost{background:transparent;}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+  .row .lbl{color:var(--muted);font-size:0.88rem;min-width:64px;}
+  select.plain{background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:8px 10px;border-radius:9px;font-size:0.86rem;outline:none;}
+
+  /* headers 编辑 */
+  .hblock{margin-top:16px;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .hhead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(2,6,23,0.4);}
+  .hhead span{color:var(--muted);font-size:0.9rem;font-weight:600;}
+  .hgrid{padding:10px 14px;display:flex;flex-direction:column;gap:8px;}
+  .hrow{display:flex;gap:8px;}
+  .hrow input{flex:1;min-width:0;background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:8px 10px;border-radius:8px;font-size:0.85rem;outline:none;font-family:"Cascadia Code",Consolas,monospace;}
+  .hrow input:focus{border-color:rgba(103,232,249,0.4);}
+  .hrow .del{cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--red);
+    border-radius:8px;padding:0 12px;font-size:0.85rem;}
+  .hrow .del:hover{border-color:var(--red);}
+
+  textarea.body{width:100%;margin-top:14px;min-height:140px;resize:vertical;background:rgba(2,6,23,0.55);
+    border:1px solid var(--line);color:var(--text);padding:14px;border-radius:12px;font-size:0.85rem;
+    line-height:1.6;outline:none;font-family:"Cascadia Code",Consolas,monospace;}
+  textarea.body:focus{border-color:rgba(103,232,249,0.4);}
+  textarea.body:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* 状态/响应 */
+  .statusbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:22px 0 6px;min-height:30px;}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;font-size:0.84rem;font-weight:700;
+    border:1px solid var(--line);background:rgba(2,6,23,0.5);}
+  .pill .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);}
+  .pill.ok .dot{background:var(--green);} .pill.warn .dot{background:var(--amber);}
+  .pill.err .dot{background:var(--red);} .pill.run .dot{background:var(--cyan);animation:pulse 1s infinite;}
+  .pill.ok{color:var(--green);border-color:rgba(52,211,153,0.35);}
+  .pill.warn{color:var(--amber);border-color:rgba(251,191,36,0.35);}
+  .pill.err{color:var(--red);border-color:rgba(251,113,133,0.35);}
+  @keyframes pulse{50%{opacity:.35;}}
+  .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(103,232,249,0.3);
+    border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .tabs{display:flex;gap:8px;margin-top:8px;}
+  .tab{cursor:pointer;padding:7px 14px;border-radius:9px;font-size:0.84rem;color:var(--muted);
+    border:1px solid var(--line);background:rgba(2,6,23,0.4);}
+  .tab.active{color:var(--cyan);border-color:rgba(103,232,249,0.4);background:rgba(103,232,249,0.08);}
+
+  .panel{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:rgba(2,6,23,0.5);overflow:hidden;}
+  .panel .phead{padding:9px 14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:0.82rem;
+    display:flex;justify-content:space-between;align-items:center;}
+  pre{margin:0;padding:16px;max-height:420px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.8rem;line-height:1.55;color:#cfe3ff;}
+  pre .key{color:#82aaff;} pre .str{color:#c3e88d;} pre .num{color:#f78c6c;}
+  pre .bool{color:#c792ea;} pre .null{color:#ff5370;}
+  .pbody.err{color:var(--red);}
+  .hidden{display:none;}
+
+  .hint{color:var(--muted);font-size:0.82rem;margin-top:10px;line-height:1.7;}
+  .footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:0.85rem;}
+  @media (max-width:760px){.hero,.content{padding-left:20px;padding-right:20px;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">{ }</div>
+      <div><h1>远程接口测试工具</h1></div>
+    </div>
+    <p class="sub">
+      像 Postman 一样对远程接口做请求测试：支持 <b>GET / POST / PUT / PATCH / DELETE</b>，自定义请求头与请求体，
+      实时显示 <b>状态码、耗时、响应头、返回数据</b>，并对网络错误、跨域（CORS）失败、超时给出明确提示。数据全部通过浏览器 <b>fetch()</b> 获取。
+    </p>
+  </header>
+
+  <main class="content">
+    <!-- 请求行 -->
+    <div class="req">
+      <select class="method" id="method">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+        <option value="PUT">PUT</option>
+        <option value="PATCH">PATCH</option>
+        <option value="DELETE">DELETE</option>
+      </select>
+      <input class="url" id="url" placeholder="https://jsonplaceholder.typicode.com/posts" spellcheck="false">
+      <button class="btn primary" id="send">▶ 发送请求</button>
+    </div>
+
+    <!-- 预设 + 操作 -->
+    <div class="row">
+      <span class="lbl">快速示例</span>
+      <select class="plain" id="preset">
+        <option value="">— 选择示例 —</option>
+        <option value="get">GET 文章列表 (jsonplaceholder)</option>
+        <option value="post">POST 新建文章 (jsonplaceholder)</option>
+        <option value="put">PUT 修改文章 (jsonplaceholder)</option>
+        <option value="del">DELETE 删除文章 (jsonplaceholder)</option>
+      </select>
+      <button class="btn ghost" id="fmt">格式化 Body</button>
+      <button class="btn ghost" id="clear">清空</button>
+    </div>
+
+    <!-- 请求头 -->
+    <div class="hblock">
+      <div class="hhead"><span>请求头 Headers（可选）</span><button class="btn ghost" id="addH">+ 添加一行</button></div>
+      <div class="hgrid" id="hgrid"></div>
+    </div>
+
+    <!-- 请求体 -->
+    <textarea class="body" id="body" placeholder="请求体（GET / DELETE 一般留空）。例如：&#10;{&#10;  &quot;title&quot;: &quot;hello&quot;,&#10;  &quot;body&quot;: &quot;来自 17-4 的测试&quot;,&#10;  &quot;userId&quot;: 1&#10;}"></textarea>
+
+    <!-- 状态条 -->
+    <div class="statusbar" id="status"></div>
+
+    <!-- 响应内容 -->
+    <div class="tabs" id="tabs" style="visibility:hidden;">
+      <div class="tab active" data-t="body">响应体</div>
+      <div class="tab" data-t="headers">响应头</div>
+    </div>
+    <div class="panel" id="panelBody">
+      <div class="phead"><span id="bodyTitle">响应体</span><button class="btn ghost" id="copyB">复制</button></div>
+      <pre class="pbody" id="outBody"></pre>
+    </div>
+    <div class="panel hidden" id="panelHeaders">
+      <div class="phead"><span>响应头 Headers</span><button class="btn ghost" id="copyH">复制</button></div>
+      <pre class="pbody" id="outHeaders"></pre>
+    </div>
+
+    <p class="hint" id="hint">
+      提示：浏览器发起跨域请求时，目标服务器必须返回 <b>Access-Control-Allow-Origin</b> 头，否则会触发 CORS 错误（下方会以红色提示）。
+      本页演示用的 jsonplaceholder 接口默认允许跨域，可直接测试。
+    </p>
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-4 远程接口测试</div>
+  </main>
+</div>
+
+<script>
+/* ===== 预设示例 ===== */
+const PRESETS = {
+  get:  { method:'GET',  url:'https://jsonplaceholder.typicode.com/posts',
+          headers:[['Accept','application/json']], body:'' },
+  post: { method:'POST', url:'https://jsonplaceholder.typicode.com/posts',
+          headers:[['Content-Type','application/json']],
+          body:'{\n  "title": "hello",\n  "body": "来自 17-4 的测试请求",\n  "userId": 1\n}' },
+  put:  { method:'PUT',  url:'https://jsonplaceholder.typicode.com/posts/1',
+          headers:[['Content-Type','application/json']],
+          body:'{\n  "id": 1,\n  "title": "已修改",\n  "body": "PUT 整体替换",\n  "userId": 1\n}' },
+  del:  { method:'DELETE', url:'https://jsonplaceholder.typicode.com/posts/1',
+          headers:[], body:'' },
+};
+
+const $ = id => document.getElementById(id);
+const methodEl=$('method'), urlEl=$('url'), bodyEl=$('body'), hgrid=$('hgrid');
+const statusEl=$('status'), outBody=$('outBody'), outHeaders=$('outHeaders');
+const tabs=$('tabs'), panelBody=$('panelBody'), panelHeaders=$('panelHeaders');
+
+/* 默认填充一个示例 */
+urlEl.value = 'https://jsonplaceholder.typicode.com/posts';
+addHeaderRow('Accept','application/json');
+
+/* ===== 请求头行 ===== */
+function addHeaderRow(k='',v=''){
+  const row=document.createElement('div'); row.className='hrow';
+  row.innerHTML=`<input class="hk" placeholder="Header 名" value="${k}">
+                 <input class="hv" placeholder="Header 值" value="${v}">
+                 <button class="del">✕</button>`;
+  row.querySelector('.del').onclick=()=>row.remove();
+  hgrid.appendChild(row);
+}
+$('addH').onclick=()=>addHeaderRow();
+
+/* 根据 method 启用/禁用 body */
+function syncBody(){
+  const hasBody=['POST','PUT','PATCH'].includes(methodEl.value);
+  bodyEl.disabled=!hasBody;
+  if(!hasBody && bodyEl.value && bodyEl.value.trim()) {/* 保留内容，仅禁用 */}
+}
+methodEl.onchange=()=>{ syncBody(); };
+
+/* ===== 高亮 JSON ===== */
+function highlightJSON(json){
+  json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return json.replace(/("(?:\\.|[^"\\])*"(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let cls='num';
+    if(/^"/.test(m)) cls = /:$/.test(m) ? 'key' : 'str';
+    else if(/^(true|false)$/.test(m)) cls='bool';
+    else if(/^null$/.test(m)) cls='null';
+    return `<span class="${cls}">${m}</span>`;
+  });
+}
+function prettyIfJSON(text){
+  try{ return JSON.stringify(JSON.parse(text),null,2); }
+  catch(e){ return text; }
+}
+
+/* ===== 设置状态条 ===== */
+function setStatus(kind, parts){
+  const labels={ok:'成功',warn:'完成(非 2xx)',err:'请求失败',run:'请求中'};
+  statusEl.innerHTML = `<span class="pill ${kind}"><span class="dot"></span>${labels[kind]||kind}</span>` +
+    parts.map(p=>`<span class="pill"><span class="dot" style="background:transparent"></span>${p}</span>`).join('');
+}
+
+/* ===== 读取自定义头 ===== */
+function collectHeaders(){
+  const h={};
+  hgrid.querySelectorAll('.hrow').forEach(r=>{
+    const k=r.querySelector('.hk').value.trim();
+    const v=r.querySelector('.hv').value.trim();
+    if(k) h[k]=v;
+  });
+  return h;
+}
+
+/* ===== 主流程：发送请求 ===== */
+async function send(){
+  const method=methodEl.value;
+  const url=urlEl.value.trim();
+  if(!url){ setStatus('err',['请先填写 URL']); return; }
+  syncBody();
+  const headers=collectHeaders();
+  let body=null;
+  if(['POST','PUT','PATCH'].includes(method)){
+    body=bodyEl.value;
+    if(body && !/^application\/json/i.test(headers['Content-Type']||'') && /^[\[{]/.test(body.trim())){
+      headers['Content-Type']='application/json'; // 自动补 JSON 类型
+    }
+  }
+
+  tabs.style.visibility='hidden';
+  panelBody.classList.add('hidden'); panelHeaders.classList.add('hidden');
+  outBody.className='pbody'; outBody.textContent=''; outHeaders.textContent='';
+  $('bodyTitle').textContent='响应体';
+  setStatus('run',['<span class="spinner"></span>请求中…','方法 '+method]);
+  $('hint').style.display='none';
+
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(), 15000); // 15s 超时
+  const t0=performance.now();
+  try{
+    const res=await fetch(url,{method,headers,body,signal:ctrl.signal});
+    const ms=Math.round(performance.now()-t0); clearTimeout(timer);
+    // 读取响应体（尝试 JSON，失败则文本）
+    let text=''; try{ text=await res.text(); }catch(e){ text='(无法读取响应体)'; }
+    const sized=(new Blob([text])).size;
+    // 响应头
+    const hh=[]; res.headers.forEach((v,k)=>hh.push([k,v]));
+    outHeaders.innerHTML = hh.length
+      ? highlightJSON(JSON.stringify(Object.fromEntries(hh),null,2))
+      : '(无可读响应头)';
+
+    // 判断是否 JSON
+    const ct=res.headers.get('content-type')||'';
+    if(ct.includes('application/json')||/^[\[{]/.test(text.trim())){
+      outBody.innerHTML=highlightJSON(prettyIfJSON(text));
+    }else{
+      outBody.textContent=text || '(空响应体)';
+    }
+
+    // 状态码配色
+    const ok=res.ok;
+    setStatus(ok?'ok':'warn',[
+      '状态码 '+res.status+' '+res.statusText,
+      '耗时 '+ms+' ms',
+      '大小 '+(sized>=1024?(sized/1024).toFixed(1)+' KB':sized+' B')
+    ]);
+    $('bodyTitle').textContent='响应体（'+res.status+' '+res.statusText+'）';
+    tabs.style.visibility='visible';
+    panelBody.classList.remove('hidden');
+  }catch(err){
+    const ms=Math.round(performance.now()-t0); clearTimeout(timer);
+    let msg;
+    if(err.name==='AbortError'){
+      msg='请求超时（>15s）被中止。请检查网络或接口是否可访问。';
+    }else if(err instanceof TypeError){
+      // 多数情况：CORS 被拦截 / 网络不通 / 协议错误
+      msg='网络或跨域错误：'+err.message+
+          '。常见原因：① 目标服务器未返回 Access-Control-Allow-Origin（CORS 拦截）；'+
+          '② 本地直接双击打开（file://）发起跨域请求受限；③ 地址不可达。建议用本地服务器或允许跨域的接口。';
+    }else{
+      msg='请求出错：'+err.message;
+    }
+    outBody.className='pbody err';
+    outBody.textContent='✗ '+msg;
+    setStatus('err',['状态码 —','耗时 '+ms+' ms']);
+    tabs.style.visibility='visible';
+    panelBody.classList.remove('hidden');
+    panelHeaders.classList.add('hidden');
+  }
+}
+
+/* ===== Tab 切换 ===== */
+tabs.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    if(t.dataset.t==='body'){ panelBody.classList.remove('hidden'); panelHeaders.classList.add('hidden'); }
+    else{ panelHeaders.classList.remove('hidden'); panelBody.classList.add('hidden'); }
+  };
+});
+
+/* ===== 复制 ===== */
+$('copyB').onclick=()=>navigator.clipboard?.writeText(outBody.textContent).then(()=>flash($('copyB'),'已复制'));
+$('copyH').onclick=()=>navigator.clipboard?.writeText(outHeaders.textContent).then(()=>flash($('copyH'),'已复制'));
+function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o,1200); }
+
+/* ===== 预设 / 操作 ===== */
+$('preset').onchange=()=>{
+  const p=PRESETS[$('preset').value]; if(!p) return;
+  methodEl.value=p.method; urlEl.value=p.url; bodyEl.value=p.body;
+  hgrid.innerHTML=''; (p.headers||[]).forEach(([k,v])=>addHeaderRow(k,v));
+  syncBody(); $('preset').value='';
+};
+$('fmt').onclick=()=>{
+  if(bodyEl.disabled) return;
+  bodyEl.value=prettyIfJSON(bodyEl.value) || bodyEl.value;
+};
+$('clear').onclick=()=>{
+  urlEl.value=''; bodyEl.value=''; hgrid.innerHTML=''; methodEl.value='GET'; syncBody();
+  statusEl.innerHTML=''; outBody.textContent=''; outHeaders.textContent=''; tabs.style.visibility='hidden';
+};
+$('send').onclick=send;
+syncBody();
+</script>
+</body>
+</html>

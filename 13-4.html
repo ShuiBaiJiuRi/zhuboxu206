@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>移动端底部导航（SVG 图标）</title>
+  <script src="./font/iconfont.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: #f2f5fa;
+      color: #24292f;
+      min-height: 100vh;
+      padding-bottom: calc(66px + env(safe-area-inset-bottom));
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.28);
+    }
+
+    .app-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .app-header p {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-top: 3px;
+    }
+
+    .app-header .search {
+      width: 24px;
+      height: 24px;
+      color: #fff;
+      fill: currentColor;
+    }
+
+    .content {
+      padding: 14px;
+    }
+
+    .note {
+      background: #fff;
+      border: 1px dashed #9fd6cd;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #5b6478;
+      margin-bottom: 14px;
+    }
+
+    .note b {
+      color: #0f766e;
+    }
+
+    .card {
+      display: flex;
+      gap: 12px;
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      padding: 10px;
+      margin-bottom: 12px;
+      transition: box-shadow 0.25s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+    }
+
+    .card img {
+      width: 110px;
+      height: 78px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .card .info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .card p {
+      font-size: 12px;
+      color: #7b8496;
+      line-height: 1.7;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card .meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #9aa4b2;
+    }
+
+    .card .meta svg {
+      width: 12px;
+      height: 12px;
+      margin-right: 3px;
+      color: #f59e0b;
+      fill: currentColor;
+      vertical-align: -1px;
+    }
+
+    .tabbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      display: flex;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1px solid #e5e9f0;
+      box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-item {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 9px 0 7px;
+      text-decoration: none;
+      color: #8a94a6;
+      transition: color 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-item.active {
+      color: #0f766e;
+    }
+
+    .ico-wrap {
+      position: relative;
+      width: 27px;
+      height: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ico {
+      width: 25px;
+      height: 25px;
+      fill: currentColor;
+      transition: transform 0.25s ease;
+    }
+
+    .nav-item.active .ico {
+      transform: translateY(-2px) scale(1.1);
+    }
+
+    .nav-text {
+      font-size: 11px;
+    }
+
+    .badge {
+      position: absolute;
+      top: -7px;
+      right: -13px;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #ff3b30;
+      border: 1.5px solid #fff;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: Arial, sans-serif;
+      line-height: 14px;
+      text-align: center;
+      box-sizing: border-box;
+      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.45);
+    }
+
+    .dot {
+      position: absolute;
+      top: -2px;
+      right: -5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ff3b30;
+      border: 1.5px solid #fff;
+      box-sizing: border-box;
+      animation: blink 1.6s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(0.75);
+        opacity: 0.65;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>光影剧场</h1>
+      <p>底部导航 · iconfont SVG 图标</p>
+    </div>
+    <svg class="search" aria-hidden="true"><use href="#icon-sousuo"></use></svg>
+  </header>
+
+  <main class="content">
+    <div class="note">
+      固定定位：<b>position: fixed</b> 贴在视口底部，页面内容用 <b>padding-bottom</b> 让位；<br>
+      自适应宽度：导航 <b>width: 100%</b>，每一项 <b>flex: 1 1 0</b>，4 项自动各占 25%；<br>
+      角标：<b>.badge</b> 数字徽章（3、99+）、<b>.dot</b> 红点，绝对定位在图标右上角。
+    </div>
+
+    <div class="card">
+      <img src="./photo/a1.jpg" alt="">
+      <div class="info">
+        <h3>城市夜行 · 第 12 集</h3>
+        <p>霓虹灯下的追踪与反追踪，主角在最后一班地铁里做出了改变整季走向的决定。</p>
+        <div class="meta">
+          <span><svg aria-hidden="true"><use href="#icon-xihuan"></use></svg>12.4万</span>
+          <span><svg aria-hidden="true"><use href="#icon-pinglun"></use></svg>3862</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="./photo/a2.jpg" alt="">
+      <div class="info">
+        <h3>山海纪行 · 大结局</h3>
+        <p>四季完结，评分升至 9.6，弹幕量创平台纪录，二刷观众已就位。</p>
+        <div class="meta">
+          <span><svg aria-hidden="true"><use href="#icon-xihuan"></use></svg>28.7万</span>
+          <span><svg aria-hidden="true"><use href="#icon-pinglun"></use></svg>1.2万</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="./photo/a3.jpg" alt="">
+      <div class="info">
+        <h3>厨房实习生 · 更新至 08 集</h3>
+        <p>新人厨师的第一场宴席，锅铲声与倒计时交织，笑点与泪点齐飞。</p>
+        <div class="meta">
+          <span><svg aria-hidden="true"><use href="#icon-xihuan"></use></svg>6.9万</span>
+          <span><svg aria-hidden="true"><use href="#icon-pinglun"></use></svg>1204</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="./photo/a2.jpg" alt="">
+      <div class="info">
+        <h3>深夜电台 · 特别节目</h3>
+        <p>一封听众来信引出的十年旧事，配乐克制，适合戴上耳机单独收听。</p>
+        <div class="meta">
+          <span><svg aria-hidden="true"><use href="#icon-xihuan"></use></svg>3.1万</span>
+          <span><svg aria-hidden="true"><use href="#icon-pinglun"></use></svg>642</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="./photo/a1.jpg" alt="">
+      <div class="info">
+        <h3>环岛骑行 · 纪录片</h3>
+        <p>1800 公里海岸线，四位骑行者用 30 天完成一次关于告别与重新出发的记录。</p>
+        <div class="meta">
+          <span><svg aria-hidden="true"><use href="#icon-xihuan"></use></svg>9.6万</span>
+          <span><svg aria-hidden="true"><use href="#icon-pinglun"></use></svg>2075</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="tabbar">
+    <a href="#" class="nav-item active">
+      <span class="ico-wrap">
+        <svg class="ico" aria-hidden="true"><use href="#icon-shouye"></use></svg>
+        <span class="dot"></span>
+      </span>
+      <span class="nav-text">首页</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="ico-wrap">
+        <svg class="ico" aria-hidden="true"><use href="#icon-remen"></use></svg>
+        <span class="badge">3</span>
+      </span>
+      <span class="nav-text">热门</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="ico-wrap">
+        <svg class="ico" aria-hidden="true"><use href="#icon-xiaoxitongzhi"></use></svg>
+        <span class="badge">99+</span>
+      </span>
+      <span class="nav-text">消息</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="ico-wrap">
+        <svg class="ico" aria-hidden="true"><use href="#icon-yonghu"></use></svg>
+      </span>
+      <span class="nav-text">我的</span>
+    </a>
+  </nav>
+
+  <script>
+    const items = document.querySelectorAll(".nav-item");
+    items.forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        items.forEach((i) => i.classList.remove("active"));
+        item.classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>

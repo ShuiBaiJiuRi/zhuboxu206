@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-5 · JavaScript 的两种定时器（setTimeout / setInterval）</title>
+<style>
+  :root {
+    --bg-1:#07111f; --bg-2:#101b2d; --panel:rgba(15,23,42,0.72);
+    --line:rgba(255,255,255,0.08); --text:#e5eefc; --muted:#9bb0c9;
+    --blue:#60a5fa; --cyan:#67e8f9; --purple:#a78bfa; --pink:#f9a8d4;
+    --green:#34d399; --amber:#fbbf24; --red:#fb7185; --shadow:rgba(2,6,23,0.6); --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:radial-gradient(circle at top left,rgba(96,165,250,0.2),transparent 28%),
+      radial-gradient(circle at bottom right,rgba(167,139,250,0.2),transparent 30%),
+      linear-gradient(135deg,var(--bg-1),var(--bg-2));color:var(--text);}
+  body{display:flex;justify-content:center;padding:40px 20px 80px;}
+  .page{width:min(1180px,100%);background:rgba(10,16,28,0.7);border:1px solid var(--line);
+    border-radius:24px;box-shadow:0 24px 90px var(--shadow);backdrop-filter:blur(12px);overflow:hidden;}
+  .hero{position:relative;padding:46px 48px 26px;background:
+      linear-gradient(120deg,rgba(96,165,250,0.18),rgba(167,139,250,0.12)),rgba(15,23,42,0.5);
+    border-bottom:1px solid var(--line);}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(12px);opacity:.8;}
+  .hero::before{width:220px;height:220px;right:8%;top:-50px;background:rgba(103,232,249,0.18);}
+  .hero::after{width:180px;height:180px;left:6%;bottom:-30px;background:rgba(249,168,212,0.16);}
+  .brand{position:relative;z-index:1;display:flex;align-items:center;gap:18px;margin-bottom:14px;}
+  .logo{width:70px;height:70px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--purple));
+    box-shadow:0 16px 30px rgba(103,232,249,0.25);font-family:"Cascadia Code",Consolas,monospace;}
+  .hero h1{margin:0;font-size:clamp(1.7rem,2.5vw,2.6rem);letter-spacing:1px;}
+  .hero .sub{position:relative;z-index:1;margin:0;max-width:880px;color:var(--muted);line-height:1.8;}
+  .content{padding:26px 48px 40px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr;}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px 22px 20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);}
+  .card h2{margin:0 0 4px;font-size:1.15rem;display:flex;align-items:center;gap:10px;}
+  .tag{font-size:0.72rem;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.5px;}
+  .tag.to{background:rgba(96,165,250,0.15);color:var(--blue);border:1px solid rgba(96,165,250,0.35);}
+  .tag.iv{background:rgba(167,139,250,0.15);color:var(--purple);border:1px solid rgba(167,139,250,0.35);}
+  .card .desc{color:var(--muted);font-size:0.88rem;line-height:1.7;margin:8px 0 16px;}
+
+  .ctrl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
+  .ctrl label{color:var(--muted);font-size:0.85rem;}
+  input[type=number]{width:110px;background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:9px 10px;border-radius:10px;font-size:0.9rem;outline:none;font-family:"Cascadia Code",Consolas,monospace;}
+  input[type=number]:focus{border-color:rgba(103,232,249,0.45);}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,0.1);color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:9px 15px;border-radius:10px;font-size:0.86rem;transition:all .18s;}
+  .btn:hover{border-color:rgba(103,232,249,0.4);transform:translateY(-1px);}
+  .btn.primary{color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--blue));border-color:transparent;font-weight:700;}
+  .btn.danger{color:var(--red);border-color:rgba(251,113,133,0.3);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+  /* 进度条 */
+  .track{height:14px;border-radius:999px;background:rgba(2,6,23,0.6);border:1px solid var(--line);overflow:hidden;}
+  .track i{display:block;height:100%;width:0;border-radius:999px;}
+  #toBar{background:linear-gradient(90deg,var(--blue),var(--cyan));}
+  .track.loop i{background:linear-gradient(90deg,var(--purple),var(--pink));
+    animation:grow var(--dur,500ms) linear infinite;animation-play-state:paused;}
+  .track.loop.on i{animation-play-state:running;}
+  @keyframes grow{from{width:0;}to{width:100%;}}
+
+  .readout{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 8px;}
+  .readout .big{font-size:2.4rem;font-weight:800;font-family:"Cascadia Code",Consolas,monospace;
+    color:var(--cyan);line-height:1;}
+  .readout .sub{color:var(--muted);font-size:0.82rem;}
+
+  .state{margin-top:14px;font-size:0.88rem;min-height:22px;color:var(--muted);transition:color .2s;}
+  .state.ok{color:var(--green);} .state.race{color:var(--amber);}
+  .card.flash{animation:flash .6s;}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(52,211,153,0.6);}100%{box-shadow:0 0 0 16px rgba(52,211,153,0);}}
+
+  pre.code{margin:16px 0 0;padding:14px;border-radius:12px;background:rgba(2,6,23,0.6);border:1px solid var(--line);
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.78rem;line-height:1.6;color:#cfe3ff;overflow:auto;}
+  pre.code .k{color:#c792ea;} pre.code .f{color:#82aaff;} pre.code .c{color:#5f7c9a;}
+  pre.code .n{color:#f78c6c;} pre.code .s{color:#c3e88d;}
+
+  /* 对比表 */
+  .compare{margin-top:26px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .compare h2{margin:0 0 14px;font-size:1.1rem;}
+  table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:0.82rem;letter-spacing:.5px;}
+  td:first-child{color:var(--muted);width:170px;}
+  tr:last-child td{border-bottom:none;}
+  .c-blue{color:var(--blue);font-weight:700;}
+  .c-purple{color:var(--purple);font-weight:700;}
+  code.inline{background:rgba(2,6,23,0.6);border:1px solid var(--line);border-radius:6px;padding:2px 7px;
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.82rem;color:var(--cyan);}
+
+  .footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:0.85rem;}
+  @media (max-width:760px){.hero,.content{padding-left:20px;padding-right:20px;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">⏱</div>
+      <div><h1>JavaScript 的两种定时器</h1></div>
+    </div>
+    <p class="sub">
+      <b>setTimeout</b>：延迟一段时间后<b>只执行一次</b>；<b>setInterval</b>：每隔固定时间<b>反复执行</b>。
+      下面两个演示都真实调用浏览器的定时器，你可以改时间、随时启动或取消，直观看到它们的区别。
+    </p>
+  </header>
+
+  <main class="content">
+    <div class="grid2">
+      <!-- ===== setTimeout ===== -->
+      <section class="card" id="toCard">
+        <h2>setTimeout <span class="tag to">只执行一次</span></h2>
+        <p class="desc">设定一个延迟时间，时间到后执行一次回调，然后<b>自动结束</b>。想“过一会儿再做某事”就用它。</p>
+
+        <div class="ctrl">
+          <label for="toMs">延迟</label>
+          <input type="number" id="toMs" value="2000" min="200" step="100">
+          <span style="color:var(--muted);font-size:0.85rem">毫秒</span>
+          <button class="btn primary" id="toStart">▶ 启动</button>
+          <button class="btn danger" id="toCancel">✕ 取消</button>
+        </div>
+
+        <div class="track"><i id="toBar"></i></div>
+
+        <div class="readout">
+          <div><div class="big" id="toCount">0</div><div class="sub">已执行次数</div></div>
+          <div style="text-align:right"><div class="sub" id="toRemain">尚未启动</div></div>
+        </div>
+
+        <div class="state" id="toState">点击「启动」按钮开始计时。</div>
+
+        <pre class="code"><span class="k">const</span> id = <span class="f">setTimeout</span>(() =&gt; {
+  <span class="f">alert</span>(<span class="s">'时间到！'</span>);
+}, <span class="n">2000</span>);
+
+<span class="c">// 取消定时器</span>
+<span class="f">clearTimeout</span>(id);</pre>
+      </section>
+
+      <!-- ===== setInterval ===== -->
+      <section class="card" id="ivCard">
+        <h2>setInterval <span class="tag iv">反复执行</span></h2>
+        <p class="desc">每隔固定时间就执行一次回调，<b>不会自己停</b>，必须调用 <b>clearInterval</b> 才能停止。适合时钟、轮播、轮询。</p>
+
+        <div class="ctrl">
+          <label for="ivMs">间隔</label>
+          <input type="number" id="ivMs" value="500" min="100" step="100">
+          <span style="color:var(--muted);font-size:0.85rem">毫秒</span>
+          <button class="btn primary" id="ivStart">▶ 开始</button>
+          <button class="btn danger" id="ivStop">■ 停止</button>
+        </div>
+
+        <div class="track loop" id="ivLoop"><i></i></div>
+
+        <div class="readout">
+          <div><div class="big" id="ivCount" style="color:var(--purple)">0</div><div class="sub">已执行次数</div></div>
+          <div style="text-align:right"><div class="sub" id="ivElapsed">运行时长 0.0 s</div></div>
+        </div>
+
+        <div class="state" id="ivState">点击「开始」按钮，它会一直重复执行。</div>
+
+        <pre class="code"><span class="k">let</span> n = <span class="n">0</span>;
+<span class="k">const</span> id = <span class="f">setInterval</span>(() =&gt; {
+  <span class="f">console</span>.log(<span class="s">'第'</span>, ++n, <span class="s">'次'</span>);
+}, <span class="n">500</span>);
+
+<span class="c">// 不停止就会一直执行下去</span>
+<span class="f">clearInterval</span>(id);</pre>
+      </section>
+    </div>
+
+    <!-- ===== 对比表 ===== -->
+    <section class="compare">
+      <h2>两者对比</h2>
+      <table>
+        <thead><tr><th>对比项</th><th class="c-blue">setTimeout</th><th class="c-purple">setInterval</th></tr></thead>
+        <tbody>
+          <tr><td>执行次数</td><td>只执行 <b>一次</b></td><td><b>反复</b>执行</td></tr>
+          <tr><td>触发时机</td><td>延迟结束后执行一次</td><td>每隔固定间隔执行</td></tr>
+          <tr><td>是否自动停止</td><td>是，执行完即结束</td><td>否，必须手动清除</td></tr>
+          <tr><td>取消方法</td><td><code class="inline">clearTimeout(id)</code></td><td><code class="inline">clearInterval(id)</code></td></tr>
+          <tr><td>返回值</td><td colspan="2">都是定时器 ID（数字，可用于取消）</td></tr>
+          <tr><td>典型用途</td><td>延时提示、防抖、延迟动画</td><td>实时时钟、轮播图、数据轮询</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-5 两种定时器</div>
+  </main>
+</div>
+
+<script>
+/* ============ setTimeout 演示 ============ */
+const toMs      = document.getElementById('toMs');
+const toBar     = document.getElementById('toBar');
+const toCountEl = document.getElementById('toCount');
+const toRemain  = document.getElementById('toRemain');
+const toState   = document.getElementById('toState');
+const toCard    = document.getElementById('toCard');
+
+let toId = null;        // setTimeout 返回的 ID
+let toTick = null;      // 用于倒计时显示的 setInterval
+let toCount = 0;
+
+function toResetBar(){
+  toBar.style.transition = 'none';
+  toBar.style.width = '0%';
+  void toBar.offsetWidth;   // 强制重排，让下一次 width 变化能触发过渡
+}
+
+document.getElementById('toStart').onclick = () => {
+  clearTimeout(toId);
+  clearInterval(toTick);
+  const ms = Math.max(200, Number(toMs.value) || 2000);
+
+  // 进度条动画 + 倒计时显示
+  toResetBar();
+  toBar.style.transition = 'width ' + ms + 'ms linear';
+  toBar.style.width = '100%';
+
+  const end = performance.now() + ms;
+  toState.className = 'state';
+  toState.textContent = '⏳ 计时中…（' + (ms / 1000).toFixed(1) + ' 秒后执行一次）';
+
+  toTick = setInterval(() => {
+    const left = end - performance.now();
+    if (left > 0) toRemain.textContent = '剩余 ' + (left / 1000).toFixed(1) + ' 秒';
+  }, 100);
+
+  toId = setTimeout(() => {
+    clearInterval(toTick);
+    toCount++;
+    toCountEl.textContent = toCount;
+    toRemain.textContent = '已完成';
+    toState.className = 'state ok';
+    toState.textContent = '✅ 「叮！」时间到，回调执行完毕 —— setTimeout 只执行这一次。';
+    toResetBar();
+    toCard.classList.add('flash');
+    setTimeout(() => toCard.classList.remove('flash'), 650);
+  }, ms);
+};
+
+document.getElementById('toCancel').onclick = () => {
+  clearTimeout(toId);
+  clearInterval(toTick);
+  toResetBar();
+  toRemain.textContent = '已取消';
+  toState.className = 'state race';
+  toState.textContent = '✕ 已调用 clearTimeout 取消，本次回调不会再执行。';
+};
+
+/* ============ setInterval 演示 ============ */
+const ivMs      = document.getElementById('ivMs');
+const ivLoop    = document.getElementById('ivLoop');
+const ivCountEl = document.getElementById('ivCount');
+const ivElapsed = document.getElementById('ivElapsed');
+const ivState   = document.getElementById('ivState');
+
+let ivId = null;
+let ivTicks = 0;
+let ivStartAt = 0;
+
+function ivStop(){
+  if (ivId) { clearInterval(ivId); ivId = null; }
+  ivLoop.classList.remove('on');
+}
+
+document.getElementById('ivStart').onclick = () => {
+  if (ivId) return;                       // 防止重复启动
+  const ms = Math.max(100, Number(ivMs.value) || 500);
+
+  ivStartAt = performance.now();
+  ivLoop.style.setProperty('--dur', ms + 'ms');
+  ivLoop.classList.add('on');
+  ivState.className = 'state';
+  ivState.textContent = '🔁 running… 每 ' + ms + ' 毫秒执行一次，不会自动停止。';
+
+  ivId = setInterval(() => {
+    ivTicks++;
+    ivCountEl.textContent = ivTicks;
+    ivElapsed.textContent = '运行时长 ' + ((performance.now() - ivStartAt) / 1000).toFixed(1) + ' s';
+  }, ms);
+};
+
+document.getElementById('ivStop').onclick = () => {
+  if (!ivId) return;
+  ivStop();
+  ivState.className = 'state race';
+  ivState.textContent = '■ 已调用 clearInterval 停止，共执行 ' + ivTicks + ' 次。';
+};
+
+/* 修改间隔时若正在运行，重启以生效 */
+ivMs.onchange = () => {
+  if (ivId) {
+    ivStop();
+    document.getElementById('ivStart').click();
+  }
+};
+</script>
+</body>
+</html>

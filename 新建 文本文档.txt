@@ -1,0 +1,2 @@
+私钥：C:\Users\28133\.ssh\id_ed25519_gitee
+公钥：C:\Users\28133\.ssh\id_ed25519_gitee.pub

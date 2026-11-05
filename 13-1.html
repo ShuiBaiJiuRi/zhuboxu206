@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Font Awesome 字体图标</title>
+  <link rel="stylesheet" href="./cdn/fontawesome/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: #f2f5fa;
+      color: #24292f;
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .tip {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .tip code {
+      background: #e8edf6;
+      color: #2f6fed;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, monospace;
+    }
+
+    .demo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 26px;
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 26px;
+    }
+
+    .demo .group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .demo .label {
+      font-size: 13px;
+      color: #8a94a6;
+    }
+
+    .demo i {
+      color: #2f6fed;
+      font-size: 26px;
+    }
+
+    .demo .size-s {
+      font-size: 16px;
+    }
+
+    .demo .size-l {
+      font-size: 40px;
+    }
+
+    .demo .color-red {
+      color: #ef4444;
+    }
+
+    .demo .color-green {
+      color: #16a34a;
+    }
+
+    .demo .color-orange {
+      color: #f59e0b;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 14px;
+    }
+
+    .item {
+      background: #fff;
+      border: 1px solid #e5e9f0;
+      border-radius: 12px;
+      padding: 20px 8px 14px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .item:hover {
+      transform: translateY(-4px);
+      border-color: #4f8cff;
+      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+    }
+
+    .item i {
+      font-size: 30px;
+      color: #2f6fed;
+    }
+
+    .item .name {
+      display: block;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .item .cls {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #9aa4b2;
+      font-family: Consolas, monospace;
+      word-break: break-all;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 26px 0 14px;
+      padding-left: 10px;
+      border-left: 4px solid #2f6fed;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 13px;
+      color: #8a94a6;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Font Awesome 图标（字体图标方式）</h1>
+  <p class="tip">
+    通过 <code>&lt;i class="fa-solid fa-house"&gt;&lt;/i&gt;</code> 调用，图标本质是字体文件中的一个字符，可用 font-size、color 控制。
+  </p>
+
+  <div class="demo">
+    <div class="group">
+      <span class="label">大小</span>
+      <i class="fa-solid fa-heart size-s"></i>
+      <i class="fa-solid fa-heart"></i>
+      <i class="fa-solid fa-heart size-l"></i>
+    </div>
+    <div class="group">
+      <span class="label">颜色</span>
+      <i class="fa-solid fa-circle-check color-red"></i>
+      <i class="fa-solid fa-circle-check color-green"></i>
+      <i class="fa-solid fa-circle-check color-orange"></i>
+    </div>
+    <div class="group">
+      <span class="label">动画</span>
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <i class="fa-solid fa-satellite-dish fa-beat"></i>
+      <i class="fa-solid fa-bell fa-bounce"></i>
+    </div>
+    <div class="group">
+      <span class="label">三种字重</span>
+      <i class="fa-solid fa-user"></i>
+      <i class="fa-regular fa-user"></i>
+      <i class="fa-brands fa-github"></i>
+    </div>
+  </div>
+
+  <h2>常用图标</h2>
+  <div class="grid">
+    <div class="item"><i class="fa-solid fa-house"></i><span class="name">首页</span><span class="cls">fa-solid fa-house</span></div>
+    <div class="item"><i class="fa-solid fa-heart"></i><span class="name">喜欢</span><span class="cls">fa-solid fa-heart</span></div>
+    <div class="item"><i class="fa-solid fa-star"></i><span class="name">收藏</span><span class="cls">fa-solid fa-star</span></div>
+    <div class="item"><i class="fa-solid fa-user"></i><span class="name">用户</span><span class="cls">fa-solid fa-user</span></div>
+    <div class="item"><i class="fa-solid fa-gear"></i><span class="name">设置</span><span class="cls">fa-solid fa-gear</span></div>
+    <div class="item"><i class="fa-solid fa-magnifying-glass"></i><span class="name">搜索</span><span class="cls">fa-solid fa-magnifying-glass</span></div>
+    <div class="item"><i class="fa-solid fa-bell"></i><span class="name">通知</span><span class="cls">fa-solid fa-bell</span></div>
+    <div class="item"><i class="fa-solid fa-envelope"></i><span class="name">邮件</span><span class="cls">fa-solid fa-envelope</span></div>
+    <div class="item"><i class="fa-solid fa-camera"></i><span class="name">相机</span><span class="cls">fa-solid fa-camera</span></div>
+    <div class="item"><i class="fa-solid fa-music"></i><span class="name">音乐</span><span class="cls">fa-solid fa-music</span></div>
+    <div class="item"><i class="fa-solid fa-video"></i><span class="name">视频</span><span class="cls">fa-solid fa-video</span></div>
+    <div class="item"><i class="fa-solid fa-image"></i><span class="name">图片</span><span class="cls">fa-solid fa-image</span></div>
+    <div class="item"><i class="fa-solid fa-calendar"></i><span class="name">日历</span><span class="cls">fa-solid fa-calendar</span></div>
+    <div class="item"><i class="fa-solid fa-clock"></i><span class="name">时间</span><span class="cls">fa-solid fa-clock</span></div>
+    <div class="item"><i class="fa-solid fa-file-lines"></i><span class="name">文件</span><span class="cls">fa-solid fa-file-lines</span></div>
+    <div class="item"><i class="fa-solid fa-folder"></i><span class="name">文件夹</span><span class="cls">fa-solid fa-folder</span></div>
+    <div class="item"><i class="fa-solid fa-download"></i><span class="name">下载</span><span class="cls">fa-solid fa-download</span></div>
+    <div class="item"><i class="fa-solid fa-trash"></i><span class="name">删除</span><span class="cls">fa-solid fa-trash</span></div>
+    <div class="item"><i class="fa-solid fa-pen"></i><span class="name">编辑</span><span class="cls">fa-solid fa-pen</span></div>
+    <div class="item"><i class="fa-solid fa-comment"></i><span class="name">评论</span><span class="cls">fa-solid fa-comment</span></div>
+    <div class="item"><i class="fa-solid fa-phone"></i><span class="name">电话</span><span class="cls">fa-solid fa-phone</span></div>
+    <div class="item"><i class="fa-solid fa-location-dot"></i><span class="name">位置</span><span class="cls">fa-solid fa-location-dot</span></div>
+    <div class="item"><i class="fa-solid fa-lock"></i><span class="name">锁定</span><span class="cls">fa-solid fa-lock</span></div>
+    <div class="item"><i class="fa-solid fa-cart-shopping"></i><span class="name">购物车</span><span class="cls">fa-solid fa-cart-shopping</span></div>
+    <div class="item"><i class="fa-solid fa-cloud"></i><span class="name">云</span><span class="cls">fa-solid fa-cloud</span></div>
+    <div class="item"><i class="fa-solid fa-code"></i><span class="name">代码</span><span class="cls">fa-solid fa-code</span></div>
+    <div class="item"><i class="fa-solid fa-laptop"></i><span class="name">笔记本</span><span class="cls">fa-solid fa-laptop</span></div>
+    <div class="item"><i class="fa-solid fa-mobile-screen"></i><span class="name">手机</span><span class="cls">fa-solid fa-mobile-screen</span></div>
+    <div class="item"><i class="fa-solid fa-headphones"></i><span class="name">耳机</span><span class="cls">fa-solid fa-headphones</span></div>
+    <div class="item"><i class="fa-solid fa-play"></i><span class="name">播放</span><span class="cls">fa-solid fa-play</span></div>
+    <div class="item"><i class="fa-solid fa-check"></i><span class="name">完成</span><span class="cls">fa-solid fa-check</span></div>
+    <div class="item"><i class="fa-solid fa-xmark"></i><span class="name">关闭</span><span class="cls">fa-solid fa-xmark</span></div>
+    <div class="item"><i class="fa-solid fa-arrow-right"></i><span class="name">向右</span><span class="cls">fa-solid fa-arrow-right</span></div>
+    <div class="item"><i class="fa-solid fa-shield-halved"></i><span class="name">安全</span><span class="cls">fa-solid fa-shield-halved</span></div>
+    <div class="item"><i class="fa-solid fa-eye"></i><span class="name">可见</span><span class="cls">fa-solid fa-eye</span></div>
+    <div class="item"><i class="fa-solid fa-bookmark"></i><span class="name">书签</span><span class="cls">fa-solid fa-bookmark</span></div>
+    <div class="item"><i class="fa-solid fa-thumbs-up"></i><span class="name">点赞</span><span class="cls">fa-solid fa-thumbs-up</span></div>
+    <div class="item"><i class="fa-solid fa-smile"></i><span class="name">表情</span><span class="cls">fa-solid fa-smile</span></div>
+    <div class="item"><i class="fa-solid fa-wifi"></i><span class="name">无线</span><span class="cls">fa-solid fa-wifi</span></div>
+    <div class="item"><i class="fa-solid fa-key"></i><span class="name">密钥</span><span class="cls">fa-solid fa-key</span></div>
+  </div>
+
+  <h2>品牌图标（fa-brands）</h2>
+  <div class="grid">
+    <div class="item"><i class="fa-brands fa-github"></i><span class="name">GitHub</span><span class="cls">fa-brands fa-github</span></div>
+    <div class="item"><i class="fa-brands fa-twitter"></i><span class="name">Twitter</span><span class="cls">fa-brands fa-twitter</span></div>
+    <div class="item"><i class="fa-brands fa-html5"></i><span class="name">HTML5</span><span class="cls">fa-brands fa-html5</span></div>
+    <div class="item"><i class="fa-brands fa-css3-alt"></i><span class="name">CSS3</span><span class="cls">fa-brands fa-css3-alt</span></div>
+    <div class="item"><i class="fa-brands fa-js"></i><span class="name">JavaScript</span><span class="cls">fa-brands fa-js</span></div>
+    <div class="item"><i class="fa-brands fa-weixin"></i><span class="name">微信</span><span class="cls">fa-brands fa-weixin</span></div>
+    <div class="item"><i class="fa-brands fa-qq"></i><span class="name">QQ</span><span class="cls">fa-brands fa-qq</span></div>
+    <div class="item"><i class="fa-brands fa-java"></i><span class="name">Java</span><span class="cls">fa-brands fa-java</span></div>
+  </div>
+
+  <footer>本地资源：./cdn/fontawesome/css/all.min.css + ./cdn/fontawesome/webfonts/*.woff2</footer>
+</body>
+</html>

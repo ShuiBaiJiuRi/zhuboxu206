@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-1 · JSON 数据格式可视化</title>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96,165,250,0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167,139,250,0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1180px, 100%);
+    background: rgba(10,16,28,0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+  .hero {
+    position: relative; padding: 50px 48px 28px;
+    background: linear-gradient(120deg, rgba(96,165,250,0.18), rgba(167,139,250,0.12)), rgba(15,23,42,0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content:""; position:absolute; border-radius:50%; filter:blur(12px); opacity:.8; }
+  .hero::before { width:220px; height:220px; right:8%; top:-50px; background:rgba(103,232,249,0.18); }
+  .hero::after { width:180px; height:180px; left:6%; bottom:-30px; background:rgba(249,168,212,0.16); }
+  .brand { position:relative; z-index:1; display:flex; align-items:center; gap:18px; margin-bottom:14px; }
+  .logo {
+    width:70px; height:70px; border-radius:20px; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:20px; color:#08111d; background:linear-gradient(135deg,var(--cyan),var(--purple));
+    box-shadow:0 16px 30px rgba(103,232,249,0.25); font-family:"Cascadia Code",Consolas,monospace;
+  }
+  .hero h1 { margin:0; font-size:clamp(1.7rem,2.5vw,2.6rem); letter-spacing:1px; }
+  .hero .sub { position:relative; z-index:1; margin:0; max-width:840px; color:var(--muted); line-height:1.8; }
+  .content { padding: 26px 48px 40px; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:26px; }
+  .stat { background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01)); border:1px solid var(--line); border-radius:var(--radius); padding:18px; }
+  .stat .num { display:block; font-size:1.5rem; font-weight:800; color:var(--cyan); margin-bottom:4px; }
+  .stat .label { color:var(--muted); font-size:0.9rem; line-height:1.5; }
+
+  .section-title { display:flex; align-items:center; gap:12px; margin:32px 0 16px; }
+  .section-title h2 { margin:0; font-size:1.35rem; }
+  .section-title .line { flex:1; height:1px; background:var(--line); }
+  .section-title .pill { font-size:0.78rem; color:var(--cyan); border:1px solid rgba(103,232,249,0.25); padding:3px 10px; border-radius:999px; }
+
+  .types { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; }
+  .type-card {
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.03); position:relative; overflow:hidden;
+  }
+  .type-card .bar { position:absolute; left:0; top:0; bottom:0; width:4px; }
+  .type-card h3 { margin:0 0 8px; font-size:1rem; padding-left:6px; }
+  .type-card .ex {
+    font-family:"Cascadia Code",Consolas,monospace; font-size:0.84rem; padding:8px 10px; border-radius:8px;
+    background:rgba(2,6,23,0.5); color:#cfe3ff; word-break:break-all;
+  }
+  .type-card .desc { color:var(--muted); font-size:0.78rem; margin-top:8px; line-height:1.5; padding-left:6px; }
+
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:22px; }
+  .panel h3 { margin:0 0 12px; font-size:1.1rem; }
+
+  /* JSON 树 */
+  .tree, .tree ul { list-style:none; margin:0; padding:0; }
+  .tree ul { padding-left:22px; border-left:1px dashed rgba(255,255,255,0.12); margin-left:6px; }
+  .tree li { margin:6px 0; }
+  .node { display:inline-flex; align-items:center; gap:8px; padding:5px 10px; border-radius:10px; background:rgba(8,14,26,0.6); border:1px solid var(--line); }
+  .toggle { cursor:pointer; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:5px; background:rgba(103,232,249,0.15); color:var(--cyan); font-size:0.8rem; user-select:none; transition:transform .2s; }
+  .toggle.collapsed { transform:rotate(-90deg); }
+  .key { color:var(--cyan); font-weight:700; font-family:"Cascadia Code",Consolas,monospace; }
+  .colon { color:var(--muted); }
+  .val-str { color:var(--green); font-family:"Cascadia Code",Consolas,monospace; }
+  .val-num { color:var(--amber); font-family:"Cascadia Code",Consolas,monospace; }
+  .val-bool { color:var(--purple); font-family:"Cascadia Code",Consolas,monospace; }
+  .val-null { color:var(--red); font-family:"Cascadia Code",Consolas,monospace; }
+  .bracket { color:var(--muted); font-family:"Cascadia Code",Consolas,monospace; }
+  .count { color:var(--muted); font-size:0.72rem; }
+  .children.hidden { display:none; }
+
+  /* 动手试 */
+  .try-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  textarea {
+    width:100%; min-height:200px; resize:vertical; border-radius:12px; padding:14px;
+    background:rgba(2,6,23,0.55); border:1px solid var(--line); color:#cfe3ff;
+    font-family:"Cascadia Code",Consolas,monospace; font-size:0.82rem; line-height:1.5;
+  }
+  .btn-row { display:flex; gap:10px; margin:12px 0; flex-wrap:wrap; }
+  .btn {
+    cursor:pointer; border:1px solid rgba(255,255,255,0.1); color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:8px 16px; border-radius:10px; font-size:0.85rem; transition:all .18s;
+  }
+  .btn:hover { border-color:rgba(103,232,249,0.4); transform:translateY(-1px); }
+  .btn.primary { color:#08111d; background:linear-gradient(135deg,var(--cyan),var(--blue)); border-color:transparent; font-weight:700; }
+  .status { font-size:0.85rem; margin:6px 0; min-height:20px; }
+  .status.ok { color:var(--green); }
+  .status.err { color:var(--red); }
+  pre.out { margin:0; padding:14px; border-radius:12px; background:rgba(2,6,23,0.55); border:1px solid var(--line); font-family:"Cascadia Code",Consolas,monospace; font-size:0.8rem; line-height:1.55; overflow:auto; max-height:320px; white-space:pre; }
+  .out .key { color:#82aaff; }
+  .out .str { color:#c3e88d; }
+  .out .num { color:#f78c6c; }
+  .out .bool { color:#c792ea; }
+  .out .null { color:#ff5370; }
+  .out .punc { color:#89ddff; }
+
+  .footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); text-align:center; color:var(--muted); font-size:0.85rem; }
+  @media (max-width:760px){ .hero,.content{padding-left:20px;padding-right:20px;} .stats,.try-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">{ }</div>
+      <div><h1>JSON 数据格式</h1></div>
+    </div>
+    <p class="sub">
+      JSON（JavaScript Object Notation）是一种轻量级的<b>数据交换格式</b>，用纯文本描述结构化数据。
+      它长得像 JS 对象，但任何语言都能读写。下面用可视化的方式拆开看看它到底是什么。
+    </p>
+  </header>
+
+  <main class="content">
+    <section class="stats">
+      <div class="stat"><span class="num">6 种</span><span class="label">基础数据类型：字符串、数字、布尔、null、数组、对象</span></div>
+      <div class="stat"><span class="num">纯文本</span><span class="label">人类可读、机器易解析，比 XML 更轻</span></div>
+      <div class="stat"><span class="num">跨语言</span><span class="label">前后端、不同语言之间通用的“数据普通话”</span></div>
+    </section>
+
+    <div class="section-title"><h2>① 六种数据类型</h2><span class="pill">Type</span><span class="line"></span></div>
+    <div class="types" id="types"></div>
+
+    <div class="section-title"><h2>② 结构可视化（可折叠）</h2><span class="pill">Tree</span><span class="line"></span></div>
+    <div class="panel">
+      <h3>点 <span style="color:var(--cyan)">▾</span> 展开 / 收起节点，理解 对象{} 与 数组[] 的嵌套关系</h3>
+      <ul class="tree" id="tree"></ul>
+    </div>
+
+    <div class="section-title"><h2>③ 动手试：格式化 &amp; 校验</h2><span class="pill">Try</span><span class="line"></span></div>
+    <div class="panel">
+      <div class="try-grid">
+        <div>
+          <h3>输入（贴一段 JSON 或 JS 对象）</h3>
+          <textarea id="input" spellcheck="false">{
+  name: "小明",
+  age: 18,
+  isStudent: true,
+  hobbies: ["篮球", "音乐"],
+  address: { city: "北京" }
+}</textarea>
+          <div class="btn-row">
+            <button class="btn primary" id="formatBtn">格式化 JSON</button>
+            <button class="btn" id="parseBtn">解析校验</button>
+            <button class="btn" id="sampleBtn">加载示例</button>
+          </div>
+          <div class="status" id="status"></div>
+        </div>
+        <div>
+          <h3>输出（规范 JSON + 高亮）</h3>
+          <pre class="out" id="output">{ }</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-1 JSON 数据格式可视化</div>
+  </main>
+</div>
+
+<script>
+/* ---------- 数据类型卡片 ---------- */
+const TYPES = [
+  { name:'字符串 String', color:'var(--green)', ex:'"hello"', desc:'必须用双引号包裹' },
+  { name:'数字 Number', color:'var(--amber)', ex:'42 / 3.14', desc:'不区分整数与小数' },
+  { name:'布尔 Boolean', color:'var(--purple)', ex:'true / false', desc:'只有两个值' },
+  { name:'空值 Null', color:'var(--red)', ex:'null', desc:'表示“无值”，不是 undefined' },
+  { name:'数组 Array', color:'var(--blue)', ex:'[1, 2, 3]', desc:'有序集合，用方括号' },
+  { name:'对象 Object', color:'var(--cyan)', ex:'{"k":"v"}', desc:'键值对，键必须是字符串' },
+];
+const typesEl = document.getElementById('types');
+TYPES.forEach(t => {
+  const d = document.createElement('div');
+  d.className = 'type-card';
+  d.innerHTML = `<span class="bar" style="background:${t.color}"></span>
+    <h3>${t.name}</h3>
+    <div class="ex">${t.ex}</div>
+    <div class="desc">${t.desc}</div>`;
+  typesEl.appendChild(d);
+});
+
+/* ---------- 可折叠 JSON 树 ---------- */
+const SAMPLE = {
+  name: "小明",
+  age: 18,
+  isStudent: true,
+  hobbies: ["篮球", "音乐", "编程"],
+  address: { city: "北京", zip: "100000" },
+  score: null
+};
+
+function valueSpan(v) {
+  if (typeof v === 'string') return `<span class="val-str">"${v}"</span>`;
+  if (typeof v === 'number') return `<span class="val-num">${v}</span>`;
+  if (typeof v === 'boolean') return `<span class="val-bool">${v}</span>`;
+  if (v === null) return `<span class="val-null">null</span>`;
+  return '';
+}
+function makeNode(key, value) {
+  const li = document.createElement('li');
+  const isObj = value !== null && typeof value === 'object';
+  if (!isObj) {
+    li.innerHTML = (key !== null ? `<span class="key">"${key}"</span><span class="colon">: </span>` : '') + valueSpan(value);
+    return li;
+  }
+  const isArr = Array.isArray(value);
+  const entries = isArr ? value.map((v,i)=>[i,v]) : Object.entries(value);
+  const open = isArr ? '[' : '{';
+  const close = isArr ? ']' : '}';
+  const wrap = document.createElement('div');
+  wrap.className = 'node';
+  wrap.innerHTML = `<span class="toggle">▾</span>
+    ${key !== null ? `<span class="key">"${key}"</span><span class="colon">: </span>` : ''}
+    <span class="bracket">${open}</span>
+    <span class="count">${isArr ? entries.length+' 项' : entries.length+' 对'}</span>
+    <span class="bracket">${close}</span>`;
+  li.appendChild(wrap);
+  const ul = document.createElement('ul');
+  entries.forEach(([k,v]) => ul.appendChild(makeNode(isArr ? null : k, v)));
+  li.appendChild(ul);
+  const tog = wrap.querySelector('.toggle');
+  tog.onclick = () => { ul.classList.toggle('hidden'); tog.classList.toggle('collapsed'); };
+  return li;
+}
+const tree = document.getElementById('tree');
+tree.appendChild(makeNode(null, SAMPLE));
+
+/* ---------- 格式化 & 校验 ---------- */
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+const status = document.getElementById('status');
+
+function highlightJSON(json){
+  json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return json.replace(
+    /("(?:\\.|[^"\\])*"(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g,
+    m => {
+      let cls = 'num';
+      if (/^"/.test(m)) cls = /:$/.test(m) ? 'key' : 'str';
+      else if (/^(true|false)$/.test(m)) cls = 'bool';
+      else if (/^null$/.test(m)) cls = 'null';
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+// 允许输入“类 JS 对象”（键不加引号），先转成标准 JSON 再格式化
+function looseToJSON(text){
+  // 用 Function 解析宽松对象字面量；失败则尝试 JSON.parse
+  try { return JSON.stringify(new Function('return (' + text + ')')()); }
+  catch(e){ return JSON.stringify(JSON.parse(text)); }
+}
+document.getElementById('formatBtn').onclick = () => {
+  try {
+    const json = looseToJSON(input.value);
+    output.innerHTML = highlightJSON(JSON.stringify(JSON.parse(json), null, 2));
+    status.textContent = '✓ 已格式化为规范 JSON'; status.className = 'status ok';
+  } catch(e){ status.textContent = '✗ 无法解析：' + e.message; status.className = 'status err'; }
+};
+document.getElementById('parseBtn').onclick = () => {
+  try { JSON.parse(looseToJSON(input.value)); status.textContent = '✓ 有效 JSON'; status.className = 'status ok'; }
+  catch(e){ status.textContent = '✗ 无效：' + e.message; status.className = 'status err'; }
+};
+document.getElementById('sampleBtn').onclick = () => {
+  input.value = `{
+  "product": "机械键盘",
+  "price": 399,
+  "inStock": true,
+  "tags": ["RGB", "红轴", "87键"],
+  "spec": { "layout": "87", "weight": "1.2kg" },
+  "discount": null
+}`;
+  document.getElementById('formatBtn').click();
+};
+// 初始展示
+document.getElementById('sampleBtn').click();
+</script>
+</body>
+</html>

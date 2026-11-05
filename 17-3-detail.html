@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-3 详情 · 商品详情（fetch 接口）</title>
+<style>
+  :root {
+    --bg-1:#07111f; --bg-2:#101b2d; --panel:rgba(15,23,42,0.72);
+    --line:rgba(255,255,255,0.08); --text:#e5eefc; --muted:#9bb0c9;
+    --blue:#60a5fa; --cyan:#67e8f9; --purple:#a78bfa; --green:#34d399;
+    --amber:#fbbf24; --red:#fb7185; --shadow:rgba(2,6,23,0.6); --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:radial-gradient(circle at top left,rgba(96,165,250,0.2),transparent 28%),
+      radial-gradient(circle at bottom right,rgba(167,139,250,0.2),transparent 30%),
+      linear-gradient(135deg,var(--bg-1),var(--bg-2));color:var(--text);}
+  body{display:flex;justify-content:center;padding:40px 20px 80px;}
+  .page{width:min(980px,100%);background:rgba(10,16,28,0.7);border:1px solid var(--line);
+    border-radius:24px;box-shadow:0 24px 90px var(--shadow);backdrop-filter:blur(12px);overflow:hidden;}
+  .hero{position:relative;padding:30px 40px 22px;background:
+      linear-gradient(120deg,rgba(96,165,250,0.18),rgba(167,139,250,0.12)),rgba(15,23,42,0.5);
+    border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .back{text-decoration:none;color:var(--text);border:1px solid var(--line);background:rgba(148,163,184,0.08);
+    padding:8px 14px;border-radius:10px;font-size:.88rem;transition:all .18s;}
+  .back:hover{border-color:rgba(103,232,249,0.45);transform:translateY(-1px);}
+  .hero h1{margin:0;font-size:clamp(1.4rem,2.2vw,2rem);}
+  .content{padding:26px 40px 40px;}
+
+  .state{font-size:0.9rem;margin:6px 0 14px;min-height:20px;}
+  .state.loading{color:var(--cyan);} .state.error{color:var(--red);} .state.ok{color:var(--green);}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(103,232,249,0.3);
+    border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .detail{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;}
+  .gallery .main{width:100%;height:280px;object-fit:cover;border-radius:16px;background:#0b1422;display:block;}
+  .thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
+  .thumbs img:hover,.thumbs img.active{border-color:var(--cyan);}
+
+  .info h2{margin:0 0 6px;font-size:1.5rem;color:var(--cyan);line-height:1.3;}
+  .price{font-size:2rem;font-weight:800;color:var(--amber);margin:6px 0;}
+  .rating{color:var(--amber);font-size:1rem;margin-bottom:12px;}
+  .desc{color:var(--muted);line-height:1.8;font-size:0.94rem;margin:10px 0 18px;}
+  .specs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .spec{background:rgba(8,14,26,0.6);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .spec .k{color:var(--muted);font-size:0.78rem;}
+  .spec .v{color:var(--text);font-size:0.98rem;font-weight:600;margin-top:2px;}
+
+  .extras{margin-top:22px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:0.88rem;line-height:1.9;}
+  .extras b{color:var(--text);}
+
+  pre.raw{margin:18px 0 0;padding:16px;border-radius:14px;background:rgba(2,6,23,0.6);border:1px solid var(--line);
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.78rem;line-height:1.5;color:#cfe3ff;
+    max-height:320px;overflow:auto;white-space:pre;}
+  pre.raw .key{color:#82aaff;} pre.raw .str{color:#c3e88d;} pre.raw .num{color:#f78c6c;}
+  pre.raw .bool{color:#c792ea;} pre.raw .null{color:#ff5370;}
+  .raw-wrap.hidden{display:none;}
+  .toolbar{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,0.1);color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:9px 16px;border-radius:10px;font-size:0.88rem;transition:all .18s;}
+  .btn:hover{border-color:rgba(103,232,249,0.4);transform:translateY(-1px);}
+  .footer{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:0.85rem;}
+  @media (max-width:760px){.hero,.content{padding-left:20px;padding-right:20px;}.detail{grid-template-columns:1fr;}.specs{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <a class="back" href="17-3.html">← 返回列表</a>
+    <h1>商品详情</h1>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <button class="btn" id="rawBtn">查看原始 JSON</button>
+      <span class="state" id="state"></span>
+    </div>
+    <div id="body"></div>
+    <div class="raw-wrap hidden">
+      <pre class="raw" id="raw"></pre>
+      <p style="color:var(--muted);font-size:.82rem;margin:4px 0 0">↑ 单个商品接口返回的原始 JSON。</p>
+    </div>
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-3 商品详情（数据来源于接口）</div>
+  </main>
+</div>
+
+<script>
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect width='100%25' height='100%25' fill='%231a2436'/%3E%3Ctext x='50%25' y='50%25' fill='%239bb0c9' font-size='14' text-anchor='middle' dy='.3em'%3E无图%3C/text%3E%3C/svg%3E";
+const stateEl = document.getElementById('state');
+const bodyEl  = document.getElementById('body');
+const rawEl   = document.getElementById('raw');
+const rawWrap = document.querySelector('.raw-wrap');
+
+const params = new URLSearchParams(location.search);
+const id = params.get('id') || '1';
+
+function highlightJSON(json){
+  json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return json.replace(/("(?:\\.|[^"\\])*"(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let cls='num';
+    if(/^"/.test(m)) cls = /:$/.test(m) ? 'key' : 'str';
+    else if(/^(true|false)$/.test(m)) cls='bool';
+    else if(/^null$/.test(m)) cls='null';
+    return `<span class="${cls}">${m}</span>`;
+  });
+}
+
+const FALLBACK = { id:Number(id), title:"演示商品", price:199, brand:"Demo", category:"电子",
+  description:"接口不可达时展示的样例详情数据。", rating:4.5, stock:20,
+  images:[PLACEHOLDER], thumbnail:PLACEHOLDER,
+  warrantyInformation:"1 年", shippingInformation:"3 天", returnPolicy:"30 天可退" };
+
+function render(p){
+  const imgs = (p.images && p.images.length) ? p.images : [p.thumbnail||PLACEHOLDER];
+  const mainImg = imgs[0];
+  const stars = '★'.repeat(Math.round(p.rating||0)) + '☆'.repeat(5-Math.round(p.rating||0));
+  bodyEl.innerHTML = `
+    <div class="detail">
+      <div class="gallery">
+        <img class="main" id="mainImg" src="${mainImg}" alt="" onerror="this.src='${PLACEHOLDER}'">
+        <div class="thumbs">${imgs.map((u,i)=>`<img src="${u}" class="${i===0?'active':''}" onerror="this.src='${PLACEHOLDER}'" onclick="document.getElementById('mainImg').src='${u}';document.querySelectorAll('.thumbs img').forEach(x=>x.classList.remove('active'));this.classList.add('active')">`).join('')}</div>
+      </div>
+      <div class="info">
+        <h2>${p.title}</h2>
+        <div class="price">$${(p.price ?? 0).toFixed(2)}</div>
+        <div class="rating">${stars} <span style="color:var(--muted)">${p.rating??'—'} / 5</span></div>
+        <div class="desc">${p.description||'暂无描述'}</div>
+        <div class="specs">
+          <div class="spec"><div class="k">品牌</div><div class="v">${p.brand??'—'}</div></div>
+          <div class="spec"><div class="k">分类</div><div class="v">${p.category??'—'}</div></div>
+          <div class="spec"><div class="k">库存</div><div class="v">${p.stock??'—'}</div></div>
+          <div class="spec"><div class="k">折扣</div><div class="v">${p.discountPercentage!=null?p.discountPercentage+'%':'无'}</div></div>
+        </div>
+        <div class="extras">
+          <div><b>保修：</b>${p.warrantyInformation||'—'}</div>
+          <div><b>物流：</b>${p.shippingInformation||'—'}</div>
+          <div><b>退换：</b>${p.returnPolicy||'—'}</div>
+          ${p.reviews&&p.reviews.length?`<div><b>评价数：</b>${p.reviews.length} 条</div>`:''}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function load(){
+  stateEl.className='state loading';
+  stateEl.innerHTML='<span class="spinner"></span>正在获取商品 #'+id+' …';
+  try{
+    const res = await fetch('https://dummyjson.com/products/'+id);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const p = await res.json();
+    rawEl.innerHTML = highlightJSON(JSON.stringify(p, null, 2));
+    stateEl.className='state ok';
+    stateEl.textContent='✓ 已从接口获取商品 #'+id;
+    render(p);
+  }catch(err){
+    rawEl.innerHTML = highlightJSON(JSON.stringify(FALLBACK, null, 2));
+    stateEl.className='state error';
+    stateEl.textContent='⚠ 接口请求失败（'+err.message+'），已展示内置样例（#'+id+'）。';
+    render(FALLBACK);
+  }
+}
+
+document.getElementById('rawBtn').onclick = () => {
+  rawWrap.classList.toggle('hidden');
+  document.getElementById('rawBtn').textContent = rawWrap.classList.contains('hidden') ? '查看原始 JSON' : '隐藏原始 JSON';
+};
+load();
+</script>
+</body>
+</html>

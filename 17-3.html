@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17-3 · 商品列表（fetch 接口）</title>
+<style>
+  :root {
+    --bg-1:#07111f; --bg-2:#101b2d; --panel:rgba(15,23,42,0.72);
+    --line:rgba(255,255,255,0.08); --text:#e5eefc; --muted:#9bb0c9;
+    --blue:#60a5fa; --cyan:#67e8f9; --purple:#a78bfa; --green:#34d399;
+    --amber:#fbbf24; --red:#fb7185; --shadow:rgba(2,6,23,0.6); --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:radial-gradient(circle at top left,rgba(96,165,250,0.2),transparent 28%),
+      radial-gradient(circle at bottom right,rgba(167,139,250,0.2),transparent 30%),
+      linear-gradient(135deg,var(--bg-1),var(--bg-2));color:var(--text);}
+  body{display:flex;justify-content:center;padding:40px 20px 80px;}
+  .page{width:min(1180px,100%);background:rgba(10,16,28,0.7);border:1px solid var(--line);
+    border-radius:24px;box-shadow:0 24px 90px var(--shadow);backdrop-filter:blur(12px);overflow:hidden;}
+  .hero{position:relative;padding:46px 48px 24px;background:
+      linear-gradient(120deg,rgba(96,165,250,0.18),rgba(167,139,250,0.12)),rgba(15,23,42,0.5);
+    border-bottom:1px solid var(--line);}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(12px);opacity:.8;}
+  .hero::before{width:220px;height:220px;right:8%;top:-50px;background:rgba(103,232,249,0.18);}
+  .hero::after{width:180px;height:180px;left:6%;bottom:-30px;background:rgba(249,168,212,0.16);}
+  .brand{position:relative;z-index:1;display:flex;align-items:center;gap:18px;margin-bottom:12px;}
+  .logo{width:68px;height:68px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:20px;color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--purple));
+    box-shadow:0 16px 30px rgba(103,232,249,0.25);font-family:"Cascadia Code",Consolas,monospace;}
+  .hero h1{margin:0;font-size:clamp(1.6rem,2.4vw,2.4rem);letter-spacing:1px;}
+  .hero .sub{position:relative;z-index:1;margin:0;max-width:880px;color:var(--muted);line-height:1.8;}
+  .content{padding:24px 48px 40px;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px;}
+  .toolbar label{color:var(--muted);font-size:0.9rem;}
+  input[type=text]{background:rgba(2,6,23,0.55);border:1px solid var(--line);color:var(--text);
+    padding:9px 12px;border-radius:10px;font-size:0.9rem;outline:none;min-width:220px;}
+  input[type=text]:focus{border-color:rgba(103,232,249,0.45);}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,0.1);color:var(--text);
+    background:linear-gradient(180deg,rgba(148,163,184,0.08),rgba(15,23,42,0.2));
+    padding:9px 16px;border-radius:10px;font-size:0.88rem;transition:all .18s;}
+  .btn:hover{border-color:rgba(103,232,249,0.4);transform:translateY(-1px);}
+  .btn.primary{color:#08111d;background:linear-gradient(135deg,var(--cyan),var(--blue));border-color:transparent;font-weight:700;}
+
+  .state{font-size:0.9rem;margin:6px 0 14px;min-height:20px;}
+  .state.loading{color:var(--cyan);} .state.error{color:var(--red);} .state.ok{color:var(--green);}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(103,232,249,0.3);
+    border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
+    border:1px solid var(--line);border-radius:16px;padding:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);transition:transform .2s,box-shadow .2s,border-color .2s;}
+  a.card:hover{transform:translateY(-4px);box-shadow:0 16px 30px rgba(8,15,28,0.4);border-color:rgba(103,232,249,0.45);}
+  a.card img.thumb{width:100%;height:150px;object-fit:cover;border-radius:10px;background:#0b1422;display:block;}
+  a.card h3{margin:10px 0 6px;font-size:1rem;color:var(--cyan);line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  a.card .meta{color:var(--muted);font-size:0.84rem;line-height:1.6;}
+  .price{color:var(--amber);font-weight:800;font-size:1.1rem;}
+
+  pre.raw{margin:18px 0 0;padding:16px;border-radius:14px;background:rgba(2,6,23,0.6);border:1px solid var(--line);
+    font-family:"Cascadia Code",Consolas,monospace;font-size:0.78rem;line-height:1.5;color:#cfe3ff;
+    max-height:320px;overflow:auto;white-space:pre;}
+  pre.raw .key{color:#82aaff;} pre.raw .str{color:#c3e88d;} pre.raw .num{color:#f78c6c;}
+  pre.raw .bool{color:#c792ea;} pre.raw .null{color:#ff5370;}
+  .raw-wrap.hidden{display:none;}
+  .footer{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:0.85rem;}
+  @media (max-width:760px){.hero,.content{padding-left:20px;padding-right:20px;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">≡</div>
+      <div><h1>商品列表</h1></div>
+    </div>
+    <p class="sub">
+      本页用 <b>fetch()</b> 请求接口
+      <code style="color:var(--cyan)">https://dummyjson.com/products?limit=8</code> 获取默认商品列表，
+      并以卡片展示。点击任意商品可跳转到<b>详情页（17-3-detail.html）</b>查看单个商品的完整信息。
+    </p>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <label for="search">搜索：</label>
+      <input type="text" id="search" placeholder="按标题/品牌/分类过滤…">
+      <button class="btn primary" id="loadBtn">重新获取</button>
+      <button class="btn" id="rawBtn">查看原始 JSON</button>
+    </div>
+    <div class="state" id="state"></div>
+    <div class="grid" id="grid"></div>
+    <div class="raw-wrap hidden">
+      <pre class="raw" id="raw"></pre>
+      <p style="color:var(--muted);font-size:.82rem;margin:4px 0 0">↑ 接口返回的原始 JSON（前 8 条商品）。</p>
+    </div>
+    <div class="footer">© 2026 高级网页设计课堂实践 · 17-3 商品列表（数据来源于接口）</div>
+  </main>
+</div>
+
+<script>
+const LIST_URL = 'https://dummyjson.com/products?limit=8';
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect width='100%25' height='100%25' fill='%231a2436'/%3E%3Ctext x='50%25' y='50%25' fill='%239bb0c9' font-size='14' text-anchor='middle' dy='.3em'%3E无图%3C/text%3E%3C/svg%3E";
+
+const stateEl = document.getElementById('state');
+const gridEl  = document.getElementById('grid');
+const rawEl   = document.getElementById('raw');
+const rawWrap = document.querySelector('.raw-wrap');
+const searchEl= document.getElementById('search');
+
+let PRODUCTS = [];
+
+function highlightJSON(json){
+  json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return json.replace(/("(?:\\.|[^"\\])*"(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let cls='num';
+    if(/^"/.test(m)) cls = /:$/.test(m) ? 'key' : 'str';
+    else if(/^(true|false)$/.test(m)) cls='bool';
+    else if(/^null$/.test(m)) cls='null';
+    return `<span class="${cls}">${m}</span>`;
+  });
+}
+
+const FALLBACK = { products:[
+  {id:1,title:"演示商品 A",price:199,brand:"Demo",category:"电子",thumbnail:PLACEHOLDER,description:"接口不可达时的样例数据。"},
+  {id:2,title:"演示商品 B",price:99,brand:"Demo",category:"家居",thumbnail:PLACEHOLDER,description:"接口不可达时的样例数据。"}
+]};
+
+function renderList(){
+  const kw = searchEl.value.trim().toLowerCase();
+  const list = (kw ? PRODUCTS.filter(p => (p.title+' '+p.brand+' '+p.category).toLowerCase().includes(kw)) : PRODUCTS);
+  gridEl.innerHTML = list.length ? list.map(p => `
+    <a class="card" href="17-3-detail.html?id=${p.id}">
+      <img class="thumb" src="${p.thumbnail||PLACEHOLDER}" alt="" onerror="this.src='${PLACEHOLDER}'">
+      <h3>${p.title}</h3>
+      <div class="meta"><span class="price">$${p.price}</span> · <b>${p.brand||''}</b><br>
+      <b>分类：</b>${p.category||'—'}</div>
+    </a>`).join('') : '<p class="state">没有匹配的商品。</p>';
+}
+
+async function load(){
+  gridEl.innerHTML=''; rawWrap.classList.add('hidden');
+  stateEl.className='state loading';
+  stateEl.innerHTML='<span class="spinner"></span>正在请求 '+LIST_URL+' …';
+  try{
+    const res = await fetch(LIST_URL);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    PRODUCTS = data.products || [];
+    rawEl.innerHTML = highlightJSON(JSON.stringify(PRODUCTS, null, 2));
+    stateEl.className='state ok';
+    stateEl.textContent = '✓ 成功获取 '+PRODUCTS.length+' 条商品（来自真实接口）';
+    renderList();
+  }catch(err){
+    PRODUCTS = FALLBACK.products;
+    rawEl.innerHTML = highlightJSON(JSON.stringify(PRODUCTS, null, 2));
+    stateEl.className='state error';
+    stateEl.textContent = '⚠ 接口请求失败（'+err.message+'），已展示内置样例数据。';
+    renderList();
+  }
+}
+
+document.getElementById('loadBtn').onclick = load;
+searchEl.oninput = renderList;
+document.getElementById('rawBtn').onclick = () => {
+  rawWrap.classList.toggle('hidden');
+  document.getElementById('rawBtn').textContent = rawWrap.classList.contains('hidden') ? '查看原始 JSON' : '隐藏原始 JSON';
+};
+load();
+</script>
+</body>
+</html>
