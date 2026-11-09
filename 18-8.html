@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-8 · 数据大屏 · 全国销售运营监控中心</title>
+<script src="./cdn/echarts/echarts.min.js"></script>
+<style>
+  :root {
+    --bg-0: #02060f; --bg-1: #050d1c; --bg-2: #0a1628;
+    --cyan: #00e5ff; --blue: #2d7bff; --purple: #a855f7;
+    --green: #22d3ee; --amber: #fbbf24; --pink: #f472b6;
+    --text: #e6f3ff; --muted: #7a93b3; --dim: #3d5470;
+    --line: rgba(0, 229, 255, 0.18);
+    --glow: 0 0 16px rgba(0, 229, 255, 0.25);
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(45, 123, 255, 0.22), transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.15), transparent 60%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 55%, var(--bg-2));
+    color: var(--text);
+  }
+
+  /* ---------- 顶部标题 ---------- */
+  .header {
+    position: relative; height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, rgba(0, 229, 255, 0.1), transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .header::before, .header::after {
+    content: ""; position: absolute; top: 50%;
+    width: 22%; height: 2px; transform: translateY(-50%);
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+  .header::before { left: 8%; }
+  .header::after  { right: 8%; transform: translateY(-50%) scaleX(-1); }
+  .header h1 {
+    font-size: 26px; letter-spacing: 6px; font-weight: 800;
+    background: linear-gradient(180deg, #ffffff 10%, var(--cyan) 60%, var(--blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 24px rgba(0, 229, 255, 0.3);
+  }
+  .header .side {
+    position: absolute; top: 0; bottom: 0; width: 260px;
+    display: flex; align-items: center; font-size: 13px; color: var(--muted);
+  }
+  .header .side.left  { left: 24px;  justify-content: flex-start; gap: 16px; }
+  .header .side.right { right: 24px; justify-content: flex-end;   gap: 16px; }
+  .header .side .val { font-family: var(--mono); color: var(--cyan); font-size: 14px; }
+
+  /* ---------- 大屏容器 ---------- */
+  .screen {
+    display: grid;
+    grid-template-columns: 340px 1fr 360px;
+    gap: 14px; padding: 14px;
+    height: calc(100vh - 72px);
+  }
+
+  .col { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+
+  /* ---------- 卡片 ---------- */
+  .panel {
+    position: relative; flex: 1; min-height: 0;
+    background: linear-gradient(180deg, rgba(8, 20, 40, 0.85), rgba(5, 12, 26, 0.92));
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    clip-path: polygon(
+      0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px,
+      100% calc(100% - 10px), calc(100% - 10px) 100%,
+      10px 100%, 0 calc(100% - 10px)
+    );
+  }
+  .panel::before, .panel::after {
+    content: ""; position: absolute; width: 14px; height: 14px;
+    border-color: var(--cyan); border-style: solid; border-width: 0; pointer-events: none;
+  }
+  .panel::before { top: 3px; left: 3px; border-top-width: 2px; border-left-width: 2px; }
+  .panel::after  { bottom: 3px; right: 3px; border-bottom-width: 2px; border-right-width: 2px; }
+
+  .panel-head {
+    position: relative; padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(90deg, rgba(0, 229, 255, 0.08), transparent 70%);
+  }
+  .panel-head .tag {
+    width: 4px; height: 16px; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan); border-radius: 2px;
+  }
+  .panel-head .title {
+    font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--text);
+  }
+  .panel-head .sub {
+    font-size: 11px; color: var(--muted); margin-left: 4px;
+    font-family: var(--mono);
+  }
+  .panel-head .more {
+    margin-left: auto; font-size: 11px; color: var(--dim); font-family: var(--mono);
+  }
+  .panel-body { flex: 1; min-height: 0; padding: 10px 12px; position: relative; }
+
+  /* ---------- KPI 行 ---------- */
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .kpi {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(45, 123, 255, 0.06));
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .kpi .n {
+    font-family: var(--mono); font-size: 22px; font-weight: 800;
+    background: linear-gradient(180deg, #fff, var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+  }
+  .kpi .l { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  .kpi .tr { font-size: 10px; font-family: var(--mono); margin-top: 3px; }
+  .kpi .tr.up   { color: var(--green); }
+  .kpi .tr.down { color: var(--pink); }
+
+  /* ---------- 表格 ---------- */
+  .rank { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .rank th, .rank td {
+    padding: 7px 6px; text-align: left; border-bottom: 1px dashed rgba(0, 229, 255, 0.1);
+  }
+  .rank th { color: var(--cyan); font-weight: 600; font-size: 11px; letter-spacing: 1px; }
+  .rank td { color: var(--text); }
+  .rank td.num { font-family: var(--mono); text-align: right; color: var(--amber); }
+  .rank td.bar { width: 45%; padding: 7px 0; }
+  .rank .bar-track {
+    height: 6px; background: rgba(0, 229, 255, 0.08); border-radius: 3px; overflow: hidden;
+  }
+  .rank .bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--blue));
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  }
+  .rank td.rk { width: 22px; font-family: var(--mono); font-weight: 800; color: var(--muted); }
+  .rank tr.top1 td.rk { color: var(--amber); }
+  .rank tr.top2 td.rk { color: #cbd5e1; }
+  .rank tr.top3 td.rk { color: #d4a574; }
+
+  /* ---------- 跑马灯 ---------- */
+  .marquee {
+    height: 100%; overflow: hidden; position: relative;
+  }
+  .marquee-track {
+    display: flex; flex-direction: column; gap: 8px;
+    animation: scroll-up 28s linear infinite;
+  }
+  @keyframes scroll-up {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+  .news {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 10px; background: rgba(0, 229, 255, 0.04);
+    border-left: 2px solid var(--cyan); border-radius: 0 6px 6px 0;
+    font-size: 12px; line-height: 1.6;
+  }
+  .news .t { font-family: var(--mono); font-size: 11px; color: var(--cyan); white-space: nowrap; margin-top: 1px; }
+  .news .c { color: var(--text); flex: 1; }
+  .news .c b { color: var(--amber); font-weight: 600; }
+  .news .s {
+    font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: rgba(0, 229, 255, 0.12); color: var(--cyan); font-family: var(--mono); flex-shrink: 0;
+  }
+  .news .s.warn { background: rgba(251, 191, 36, 0.12); color: var(--amber); }
+  .news .s.bad  { background: rgba(244, 114, 182, 0.14); color: var(--pink); }
+
+  /* ---------- 图表容器 ---------- */
+  .chart { width: 100%; height: 100%; }
+
+  /* ---------- 中间列地图区域 ---------- */
+  .map-wrap { position: relative; width: 100%; height: 100%; }
+
+  /* ---------- 响应式（仅大屏场景，小屏隐藏次要） ---------- */
+  @media (max-width: 1400px) {
+    .screen { grid-template-columns: 280px 1fr 300px; }
+    .header h1 { font-size: 22px; letter-spacing: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="side left">
+    <span>📅 <span class="val" id="dateStr">—</span></span>
+    <span>🕐 <span class="val" id="timeStr">—</span></span>
+  </div>
+  <h1>全国销售运营监控中心</h1>
+  <div class="side right">
+    <span>在线节点 <span class="val">38 / 40</span></span>
+    <span>数据延迟 <span class="val">12 ms</span></span>
+  </div>
+</header>
+
+<div class="screen">
+
+  <!-- ===================== 左列 ===================== -->
+  <div class="col">
+
+    <div class="panel" style="flex: 0 0 auto;">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">核心指标</span>
+      </div>
+      <div class="panel-body" style="padding: 14px;">
+        <div class="kpi-row">
+          <div class="kpi"><div class="n">12.8<span style="font-size:14px">亿</span></div><div class="l">GMV</div><div class="tr up">▲ 18.4%</div></div>
+          <div class="kpi"><div class="n">482<span style="font-size:14px">万</span></div><div class="l">订单数</div><div class="tr up">▲ 9.2%</div></div>
+          <div class="kpi"><div class="n">96.7<span style="font-size:14px">%</span></div><div class="l">履约率</div><div class="tr up">▲ 1.1%</div></div>
+          <div class="kpi"><div class="n">386<span style="font-size:14px">元</span></div><div class="l">客单价</div><div class="tr down">▼ 2.3%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">全国销售排行</span>
+        <span class="sub">TOP 10 省份</span>
+      </div>
+      <div class="panel-body">
+        <table class="rank" id="rankTable">
+          <thead><tr><th style="width:22px">#</th><th>省份</th><th class="bar">占比</th><th class="num">销售额</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">品类销售占比</span>
+      </div>
+      <div class="panel-body">
+        <div id="chartPie" class="chart"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== 中列 ===================== -->
+  <div class="col">
+
+    <div class="panel" style="flex: 2 1 0; min-height: 0;">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">全国销售地理分布</span>
+        <span class="sub">GEO · province · scatter</span>
+        <span class="more">● REAL-TIME</span>
+      </div>
+      <div class="panel-body">
+        <div id="chartMap" class="chart map-wrap"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="flex: 1 1 0; min-height: 0;">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">销售趋势 · 近 14 天</span>
+        <span class="sub">双轴 · 订单数 / GMV</span>
+      </div>
+      <div class="panel-body">
+        <div id="chartLine" class="chart"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== 右列 ===================== -->
+  <div class="col">
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">实时动态</span>
+        <span class="sub">EVENT STREAM</span>
+      </div>
+      <div class="panel-body">
+        <div class="marquee"><div class="marquee-track" id="marquee"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">渠道转化能力</span>
+        <span class="sub">RADAR · 6 维</span>
+      </div>
+      <div class="panel-body">
+        <div id="chartRadar" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="tag"></span><span class="title">订单量分布</span>
+        <span class="sub">按小时 · 24H</span>
+      </div>
+      <div class="panel-body">
+        <div id="chartBar" class="chart"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   18-8 数据大屏 · 全国销售运营监控中心
+   ECharts (本地 UMD) + 本地 china.json GeoJSON
+   ========================================================= */
+
+/* ---------- 实时时钟 ---------- */
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function tick(){
+  const d = new Date();
+  const week = ['日','一','二','三','四','五','六'][d.getDay()];
+  document.getElementById('dateStr').textContent =
+    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} 周${week}`;
+  document.getElementById('timeStr').textContent =
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- 地图 GeoJSON ---------- */
+const PROVINCE_DATA = [
+  {name:'广东', value:12800, coords:[113.2644, 23.1291]},
+  {name:'浙江', value:11600, coords:[120.1551, 30.2741]},
+  {name:'江苏', value:10900, coords:[118.7969, 32.0603]},
+  {name:'山东', value:9800,  coords:[117.0009, 36.6758]},
+  {name:'四川', value:8400,  coords:[104.0665, 30.5728]},
+  {name:'北京', value:7900,  coords:[116.4074, 39.9042]},
+  {name:'上海', value:7500,  coords:[121.4737, 31.2304]},
+  {name:'河南', value:6200,  coords:[113.6254, 34.7466]},
+  {name:'湖北', value:5900,  coords:[114.3055, 30.5928]},
+  {name:'福建', value:5600,  coords:[119.2965, 26.0745]},
+  {name:'湖南', value:5100,  coords:[112.9823, 28.1941]},
+  {name:'河北', value:4800,  coords:[114.5149, 38.0428]},
+  {name:'安徽', value:4200,  coords:[117.283,  31.8612]},
+  {name:'辽宁', value:4000,  coords:[123.4315, 41.8057]},
+  {name:'陕西', value:3700,  coords:[108.9402, 34.261]},
+  {name:'江西', value:3400,  coords:[115.8921, 28.6765]},
+  {name:'重庆', value:3200,  coords:[106.5516, 29.563]},
+  {name:'云南', value:2900,  coords:[102.8329, 24.8801]},
+  {name:'广西', value:2600,  coords:[108.3665, 22.817]},
+  {name:'山西', value:2400,  coords:[112.5489, 37.8706]},
+  {name:'贵州', value:2100,  coords:[106.7135, 26.5783]},
+  {name:'黑龙江',value:2000, coords:[126.6424, 45.7567]},
+  {name:'吉林', value:1700,  coords:[125.3245, 43.8868]},
+  {name:'内蒙古',value:1600, coords:[111.6412, 40.2139]},
+  {name:'新疆', value:1400,  coords:[87.6168,  43.8256]},
+  {name:'甘肃', value:1100,  coords:[103.8343, 36.0611]},
+  {name:'海南', value:1000,  coords:[110.3494, 20.0174]},
+  {name:'宁夏', value:600,   coords:[106.2309, 38.4872]},
+  {name:'青海', value:500,   coords:[101.7782, 36.6232]},
+  {name:'西藏', value:300,   coords:[91.1172,  29.6456]},
+  {name:'天津', value:3500,  coords:[117.2009, 39.0842]},
+  {name:'台湾', value:2800,  coords:[121.5654, 25.033]},
+  {name:'香港', value:2300,  coords:[114.1694, 22.3193]},
+  {name:'澳门', value:800,   coords:[113.5491, 22.199]}
+];
+
+/* ---------- 注册地图 ---------- */
+fetch('./cdn/echarts/json/china.json')
+  .then(r => r.json())
+  .then(geo => {
+    echarts.registerMap('china', geo);
+    initCharts();
+  })
+  .catch(err => {
+    console.error('地图数据加载失败', err);
+    document.getElementById('chartMap').innerHTML =
+      '<div style="padding:40px;color:#f472b6;font-size:14px;text-align:center">地图 GeoJSON 加载失败<br>请确认 ./cdn/echarts/json/china.json 存在</div>';
+  });
+
+/* ---------- 公共：ECharts 主题色 ---------- */
+const TX = '#e6f3ff';
+const MT = '#7a93b3';
+const gridCommon = { left: 48, right: 24, top: 36, bottom: 36, containLabel: false };
+
+/* ---------- 排行表 ---------- */
+function renderRank() {
+  const sorted = [...PROVINCE_DATA].sort((a,b)=>b.value-a.value).slice(0,10);
+  const max = sorted[0].value;
+  const tbody = document.querySelector('#rankTable tbody');
+  tbody.innerHTML = sorted.map((p, i) => {
+    const cls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+    const pct = ((p.value / max) * 100).toFixed(1);
+    return `<tr class="${cls}">
+      <td class="rk">${String(i+1).padStart(2,'0')}</td>
+      <td>${p.name}</td>
+      <td class="bar"><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></td>
+      <td class="num">${(p.value/100).toFixed(1)}亿</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- 跑马灯 ---------- */
+function renderMarquee() {
+  const items = [
+    { t: '14:32:18', c: '<b>广东</b> · 深圳仓 · 大促订单突增', s: 'info' },
+    { t: '14:31:05', c: '<b>浙江</b> · 双十一预售破 120 万单', s: 'info' },
+    { t: '14:30:44', c: '物流节点 <b>北京-顺义</b> 延迟 18 分钟', s: 'warn' },
+    { t: '14:29:12', c: '<b>四川</b> · 成都分中心 GMV 同比 +34%', s: 'info' },
+    { t: '14:28:58', c: '支付网关 <b>alipay</b> 成功率 99.92%', s: 'info' },
+    { t: '14:27:03', c: '<b>上海</b> · 新客注册破 <b>28,400</b>', s: 'info' },
+    { t: '14:25:47', c: '库存预警：<b>iPhone 16 Pro</b> 仅剩 4%', s: 'bad' },
+    { t: '14:24:21', c: '<b>山东</b> · 青岛仓峰值处理 3.8 万单/小时', s: 'info' },
+    { t: '14:22:09', c: '新渠道 <b>抖音直播</b> 贡献 GMV 1.2 亿', s: 'info' },
+    { t: '14:20:33', c: '<b>新疆</b> · 偏远地区履约时效提升 12%', s: 'info' },
+    { t: '14:19:18', c: '<b>广东</b> · 深圳仓 · 大促订单突增', s: 'info' },
+    { t: '14:18:05', c: '<b>浙江</b> · 双十一预售破 120 万单', s: 'info' },
+    { t: '14:16:44', c: '物流节点 <b>北京-顺义</b> 延迟 18 分钟', s: 'warn' },
+    { t: '14:15:12', c: '<b>四川</b> · 成都分中心 GMV 同比 +34%', s: 'info' },
+    { t: '14:13:58', c: '支付网关 <b>alipay</b> 成功率 99.92%', s: 'info' },
+    { t: '14:12:03', c: '<b>上海</b> · 新客注册破 <b>28,400</b>', s: 'info' },
+    { t: '14:10:47', c: '库存预警：<b>iPhone 16 Pro</b> 仅剩 4%', s: 'bad' },
+    { t: '14:09:21', c: '<b>山东</b> · 青岛仓峰值处理 3.8 万单/小时', s: 'info' },
+    { t: '14:07:09', c: '新渠道 <b>抖音直播</b> 贡献 GMV 1.2 亿', s: 'info' },
+    { t: '14:05:33', c: '<b>新疆</b> · 偏远地区履约时效提升 12%', s: 'info' }
+  ];
+  const html = items.map(it =>
+    `<div class="news"><span class="t">${it.t}</span><span class="c">${it.c}</span><span class="s ${it.s === 'info' ? '' : it.s}">${it.s === 'warn' ? 'WARN' : it.s === 'bad' ? 'ALERT' : 'EVT'}</span></div>`
+  ).join('');
+  document.getElementById('marquee').innerHTML = html;
+}
+
+/* =========================================================
+   图表初始化
+   ========================================================= */
+let mapChart, pieChart, lineChart, radarChart, barChart;
+
+function initCharts() {
+  renderRank();
+  renderMarquee();
+
+  mapChart   = echarts.init(document.getElementById('chartMap'));
+  pieChart   = echarts.init(document.getElementById('chartPie'));
+  lineChart  = echarts.init(document.getElementById('chartLine'));
+  radarChart = echarts.init(document.getElementById('chartRadar'));
+  barChart   = echarts.init(document.getElementById('chartBar'));
+
+  drawMap();
+  drawPie();
+  drawLine();
+  drawRadar();
+  drawBar();
+
+  window.addEventListener('resize', () => {
+    [mapChart, pieChart, lineChart, radarChart, barChart].forEach(c => c && c.resize());
+  });
+
+  startTick();
+}
+
+/* ---------- 图 1：中国地图 + 散点涟漪 + 热力 ---------- */
+function drawMap() {
+  const max = Math.max(...PROVINCE_DATA.map(p => p.value));
+  mapChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(5,12,26,0.95)',
+      borderColor: '#00e5ff', borderWidth: 1,
+      textStyle: { color: TX, fontSize: 13 },
+      formatter: p => {
+        if (p.seriesType === 'effectScatter' || p.seriesType === 'scatter') {
+          return `<b style="color:#00e5ff;font-size:14px">${p.name}</b><br/>销售额：<b style="color:#fbbf24">${(p.value[2]/100).toFixed(2)}</b> 亿`;
+        }
+        if (p.value) {
+          return `<b style="color:#00e5ff;font-size:14px">${p.name}</b><br/>销售额：<b style="color:#fbbf24">${(p.value/100).toFixed(2)}</b> 亿`;
+        }
+        return `<b style="color:#00e5ff;font-size:14px">${p.name}</b><br/>暂无数据`;
+      }
+    },
+    visualMap: {
+      min: 0, max: max, calculable: true,
+      left: 18, bottom: 18,
+      textStyle: { color: MT, fontSize: 11 },
+      itemWidth: 12, itemHeight: 90,
+      orient: 'vertical',
+      inRange: {
+        color: ['#0a1628', '#0c4a6e', '#0891b2', '#00e5ff']
+      },
+      text: ['高', '低']
+    },
+    geo: {
+      map: 'china', roam: true, zoom: 1.25, scaleLimit: { min: 0.8, max: 4 },
+      label: { show: false },
+      itemStyle: {
+        areaColor: '#0a1e3d',
+        borderColor: 'rgba(0, 229, 255, 0.45)',
+        borderWidth: 0.8
+      },
+      emphasis: {
+        label: { show: true, color: '#fff', fontSize: 12 },
+        itemStyle: { areaColor: '#1e40af', borderColor: '#00e5ff', borderWidth: 1.2, shadowBlur: 20, shadowColor: '#00e5ff' }
+      },
+      select: { disabled: true }
+    },
+    series: [
+      {
+        name: '省份销售额', type: 'map', geoIndex: 0,
+        data: PROVINCE_DATA.map(p => ({ name: p.name, value: p.value }))
+      },
+      {
+        name: '核心城市',
+        type: 'effectScatter', coordinateSystem: 'geo',
+        rippleEffect: { brushType: 'stroke', scale: 4, period: 4 },
+        symbolSize: val => Math.max(6, (val[2] / max) * 22),
+        itemStyle: { color: '#fbbf24', shadowBlur: 12, shadowColor: '#fbbf24' },
+        zlevel: 2,
+        data: PROVINCE_DATA.filter(p => p.value > 5500).map(p => ({
+          name: p.name, value: [...p.coords, p.value]
+        }))
+      },
+      {
+        name: '次级城市',
+        type: 'scatter', coordinateSystem: 'geo',
+        symbolSize: val => Math.max(3, (val[2] / max) * 14),
+        itemStyle: { color: '#a855f7', shadowBlur: 8, shadowColor: '#a855f7', opacity: 0.85 },
+        zlevel: 1,
+        data: PROVINCE_DATA.filter(p => p.value <= 5500 && p.value > 2500).map(p => ({
+          name: p.name, value: [...p.coords, p.value]
+        }))
+      }
+    ]
+  });
+}
+
+/* ---------- 图 2：饼图（品类） ---------- */
+function drawPie() {
+  pieChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'item', backgroundColor: 'rgba(5,12,26,0.95)', borderColor: '#00e5ff', textStyle: { color: TX }, formatter: '{b}<br/>销售额 {c} 亿元 ({d}%)' },
+    legend: {
+      orient: 'vertical', right: 10, top: 'middle',
+      textStyle: { color: MT, fontSize: 11 },
+      itemWidth: 10, itemHeight: 10, itemGap: 10
+    },
+    color: ['#00e5ff', '#2d7bff', '#a855f7', '#fbbf24', '#f472b6', '#22d3ee'],
+    series: [{
+      type: 'pie', radius: ['45%', '72%'], center: ['35%', '50%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderColor: '#050c1a', borderWidth: 2, borderRadius: 4 },
+      label: { show: false },
+      labelLine: { show: false },
+      data: [
+        { value: 38, name: '3C 数码' },
+        { value: 28, name: '服饰鞋包' },
+        { value: 18, name: '美妆个护' },
+        { value: 15, name: '食品生鲜' },
+        { value: 9,  name: '家居家装' },
+        { value: 7,  name: '母婴玩具' }
+      ]
+    }]
+  });
+}
+
+/* ---------- 图 3：折线图（14 天趋势） ---------- */
+function drawLine() {
+  const days = [];
+  const d = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const t = new Date(d); t.setDate(d.getDate() - i);
+    days.push(`${t.getMonth()+1}/${t.getDate()}`);
+  }
+  const gmv =    [6.2, 7.1, 6.8, 8.2, 9.5, 10.3, 9.8, 11.2, 12.0, 11.5, 12.8, 13.4, 14.1, 12.8];
+  const orders = [280, 312, 298, 356, 402, 445, 421, 498, 521, 510, 548, 572, 598, 482];
+
+  lineChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis', axisPointer: { type: 'cross' },
+      backgroundColor: 'rgba(5,12,26,0.95)', borderColor: '#00e5ff', textStyle: { color: TX }
+    },
+    legend: { data: ['GMV(亿)', '订单数(万)'], top: 2, textStyle: { color: MT, fontSize: 11 }, itemWidth: 14 },
+    grid: gridCommon,
+    xAxis: {
+      type: 'category', data: days, boundaryGap: false,
+      axisLine: { lineStyle: { color: '#3d5470' } },
+      axisLabel: { color: MT, fontSize: 11 }
+    },
+    yAxis: [
+      {
+        type: 'value', name: 'GMV(亿)', nameTextStyle: { color: MT },
+        axisLine: { show: false }, axisLabel: { color: MT, fontSize: 11 },
+        splitLine: { lineStyle: { color: 'rgba(0,229,255,0.08)' } }
+      },
+      {
+        type: 'value', name: '订单(万)', nameTextStyle: { color: MT },
+        axisLine: { show: false }, axisLabel: { color: MT, fontSize: 11 },
+        splitLine: { show: false }
+      }
+    ],
+    series: [
+      {
+        name: 'GMV(亿)', type: 'line', smooth: true,
+        symbol: 'circle', symbolSize: 6, showSymbol: false,
+        lineStyle: { width: 2.5, color: '#00e5ff' },
+        itemStyle: { color: '#00e5ff' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0,0,0,1,[
+            { offset: 0, color: 'rgba(0,229,255,0.45)' },
+            { offset: 1, color: 'rgba(0,229,255,0)' }
+          ])
+        },
+        emphasis: { focus: 'series' },
+        data: gmv
+      },
+      {
+        name: '订单数(万)', type: 'line', yAxisIndex: 1, smooth: true,
+        symbol: 'circle', symbolSize: 6, showSymbol: false,
+        lineStyle: { width: 2.5, color: '#a855f7', type: 'dashed' },
+        itemStyle: { color: '#a855f7' },
+        emphasis: { focus: 'series' },
+        data: orders
+      }
+    ]
+  });
+}
+
+/* ---------- 图 4：雷达图（渠道能力） ---------- */
+function drawRadar() {
+  radarChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { backgroundColor: 'rgba(5,12,26,0.95)', borderColor: '#00e5ff', textStyle: { color: TX } },
+    legend: { data: ['自营官网', '天猫旗舰', '抖音直播', '线下门店'], bottom: 2, textStyle: { color: MT, fontSize: 11 }, itemWidth: 10 },
+    radar: {
+      indicator: [
+        { name: '流量规模', max: 100 },
+        { name: '转化率',   max: 100 },
+        { name: '客单价',   max: 100 },
+        { name: '复购率',   max: 100 },
+        { name: '履约时效', max: 100 },
+        { name: '毛利',     max: 100 }
+      ],
+      center: ['50%', '52%'], radius: '62%',
+      axisName: { color: MT, fontSize: 11 },
+      splitArea: { areaStyle: { color: ['rgba(0,229,255,0.03)', 'rgba(0,229,255,0.06)'] } },
+      splitLine: { lineStyle: { color: 'rgba(0,229,255,0.2)' } },
+      axisLine: { lineStyle: { color: 'rgba(0,229,255,0.25)' } }
+    },
+    series: [{
+      type: 'radar',
+      emphasis: { focus: 'series' },
+      data: [
+        { value: [82, 76, 88, 70, 72, 85], name: '自营官网',
+          areaStyle: { color: 'rgba(0,229,255,0.22)' }, itemStyle: { color: '#00e5ff' }, lineStyle: { width: 2 } },
+        { value: [95, 68, 62, 58, 80, 45], name: '天猫旗舰',
+          areaStyle: { color: 'rgba(45,123,255,0.18)' }, itemStyle: { color: '#2d7bff' }, lineStyle: { width: 2 } },
+        { value: [88, 82, 55, 52, 78, 52], name: '抖音直播',
+          areaStyle: { color: 'rgba(168,85,247,0.18)' }, itemStyle: { color: '#a855f7' }, lineStyle: { width: 2 } },
+        { value: [42, 90, 92, 95, 62, 92], name: '线下门店',
+          areaStyle: { color: 'rgba(251,191,36,0.14)' }, itemStyle: { color: '#fbbf24' }, lineStyle: { width: 2 } }
+      ]
+    }]
+  });
+}
+
+/* ---------- 图 5：柱状图（24 小时分布） ---------- */
+function drawBar() {
+  const hours = Array.from({length: 24}, (_, i) => pad(i));
+  const data = [12,8,5,3,3,6,15,38,82,128,165,198,172,158,175,188,210,245,282,315,298,245,165,88];
+  barChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis', backgroundColor: 'rgba(5,12,26,0.95)', borderColor: '#00e5ff', textStyle: { color: TX }, axisPointer: { type: 'shadow' } },
+    grid: { left: 36, right: 16, top: 20, bottom: 30 },
+    xAxis: {
+      type: 'category', data: hours,
+      axisLine: { lineStyle: { color: '#3d5470' } },
+      axisLabel: { color: MT, fontSize: 10, interval: 2 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false }, axisLabel: { color: MT, fontSize: 10 },
+      splitLine: { lineStyle: { color: 'rgba(0,229,255,0.08)' } }
+    },
+    series: [{
+      type: 'bar', data, barWidth: '55%',
+      itemStyle: {
+        borderRadius: [3, 3, 0, 0],
+        color: new echarts.graphic.LinearGradient(0,0,0,1,[
+          { offset: 0, color: '#00e5ff' },
+          { offset: 1, color: 'rgba(0,229,255,0.08)' }
+        ])
+      },
+      emphasis: { itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+        { offset: 0, color: '#fbbf24' }, { offset: 1, color: 'rgba(251,191,36,0.1)' }
+      ])}}
+    }]
+  });
+}
+
+/* ---------- 模拟涟漪扩散（每隔 3 秒加一个新散点） ---------- */
+function startTick() {
+  let idx = 0;
+  setInterval(() => {
+    if (!mapChart) return;
+    const pool = PROVINCE_DATA.filter(p => p.value > 2500);
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    const scatter = mapChart.getOption().series[1];
+    const curData = scatter.data.filter(d => d._alive !== false || !d._born);
+    curData.push({
+      name: p.name, value: [...p.coords, p.value], _born: Date.now(), _alive: true
+    });
+    curData.forEach(d => {
+      if (d._born && Date.now() - d._born > 8000) d._alive = false;
+    });
+    mapChart.setOption({ series: [{ data: PROVINCE_DATA.map(pv => ({ name: pv.name, value: pv.value })) }, { data: curData.filter(d => d._alive !== false) }] });
+    idx++;
+  }, 3500);
+}
+</script>
+</body>
+</html>

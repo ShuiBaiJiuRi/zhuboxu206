@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-4 · ECharts 数据可视化（双图表联动）</title>
+<script src="./cdn/echarts/echarts.min.js"></script>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1240px, 100%);
+    background: rgba(10, 16, 28, 0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative; padding: 48px 48px 26px;
+    background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)), rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: .8; }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px; color: #08111d; font-family: var(--mono);
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.7rem, 2.5vw, 2.6rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 940px; color: var(--muted); line-height: 1.85; }
+  .hero .sub b { color: var(--cyan); }
+  .jumps { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .jump {
+    color: var(--cyan); text-decoration: none; font-size: 0.84rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .jump:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 14px; }
+  .section-title h2 { margin: 0; font-size: 1.22rem; }
+  .section-title .line { flex: 1; height: 1px; background: var(--line); }
+  .section-title .pill { font-size: 0.75rem; color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.25); padding: 3px 10px; border-radius: 999px; }
+
+  /* ---------- 摘要 ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px;
+  }
+  .stat .num { display: block; font-family: var(--mono); font-size: 1.05rem; font-weight: 800; color: var(--cyan); }
+  .stat .label { color: var(--muted); font-size: 0.77rem; line-height: 1.55; }
+
+  /* ---------- 控件 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group > .lb { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 8px 14px; border-radius: 10px; font-size: 0.83rem; transition: all .18s;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 800; }
+  select {
+    background: rgba(2, 6, 23, 0.55); border: 1px solid var(--line); color: var(--text);
+    padding: 8px 12px; border-radius: 10px; font-size: 0.83rem; outline: none;
+  }
+  .chip {
+    cursor: pointer; border: 1px solid var(--line); color: var(--muted);
+    background: rgba(148, 163, 184, 0.06); padding: 6px 12px; border-radius: 999px;
+    font-size: 0.8rem; transition: all .18s;
+  }
+  .chip:hover { color: var(--text); border-color: rgba(103, 232, 249, 0.35); }
+  .chip.on { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); border-color: transparent; font-weight: 700; }
+  .swatch { cursor: pointer; width: 26px; height: 26px; border-radius: 8px; border: 2px solid transparent; transition: transform .18s; }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.on { border-color: #fff; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--cyan); }
+  .tip-inline { margin-left: auto; font-size: 0.77rem; color: var(--muted); }
+
+  .scope {
+    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px; padding: 10px 14px; border-radius: 12px;
+    background: linear-gradient(90deg, rgba(167, 139, 250, 0.16), rgba(103, 232, 249, 0.08));
+    border: 1px solid rgba(167, 139, 250, 0.35); font-size: 0.86rem;
+  }
+  .scope.show { display: flex; }
+  .scope b { color: var(--purple); }
+
+  /* ---------- 图表卡片 ---------- */
+  .chart-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .chart-card .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chart-card .head h3 { margin: 0; font-size: 1.02rem; display: flex; align-items: center; gap: 8px; }
+  .chart-card .head h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .chart-card .head .badge {
+    font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; color: var(--cyan);
+    background: rgba(103, 232, 249, 0.1); border: 1px solid rgba(103, 232, 249, 0.26);
+  }
+  .chart-box {
+    width: 100%; height: 420px; border-radius: 14px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(6, 14, 28, 0.62), rgba(4, 10, 22, 0.72));
+    border: 1px solid var(--line);
+  }
+  .fig-note { margin: 10px 2px 0; color: var(--muted); font-size: 0.8rem; line-height: 1.75; }
+  .fig-note b { color: var(--cyan); }
+  .grid2 { display: grid; grid-template-columns: 1.45fr .55fr; gap: 16px; align-items: start; }
+  .detail {
+    background: rgba(8, 14, 26, 0.6); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  }
+  .detail h4 { margin: 0 0 10px; font-size: 0.96rem; display: flex; align-items: center; gap: 8px; }
+  .detail h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 10px var(--purple); }
+  .detail .nm { font-size: 1.08rem; font-weight: 800; margin-bottom: 10px; }
+  .detail .desc { color: var(--muted); font-size: 0.82rem; line-height: 1.8; margin: 0 0 12px; }
+  .kv { display: grid; grid-template-columns: 76px 1fr; gap: 8px; font-size: 0.81rem; color: var(--muted); line-height: 1.7; }
+  .kv b { color: var(--text); font-weight: 600; }
+  .kv .hl { color: var(--amber); }
+  .bar { height: 7px; border-radius: 999px; background: rgba(2, 6, 23, 0.7); overflow: hidden; margin: 8px 0 12px; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--purple)); transition: width .5s ease; }
+
+  /* ---------- 说明 / 代码 ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card .no {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px;
+    border-radius: 8px; font-family: var(--mono); font-size: 0.74rem; font-weight: 800;
+    color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); margin-bottom: 10px; padding: 0 6px;
+  }
+  .card h4 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.83rem; line-height: 1.75; }
+  .card code { font-family: var(--mono); color: var(--amber); font-size: 0.8rem; }
+  pre.code {
+    margin: 14px 0 0; padding: 16px; border-radius: 14px; overflow-x: auto;
+    background: rgba(2, 6, 23, 0.6); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.8rem; line-height: 1.75; color: #cfe3ff;
+  }
+  pre.code .k { color: #c792ea; } pre.code .f { color: #82aaff; }
+  pre.code .s { color: #c3e88d; } pre.code .n { color: #f78c6c; }
+  pre.code .c { color: #5c6b82; }
+  .local {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px;
+  }
+  .local .item { background: rgba(8, 14, 26, 0.6); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; }
+  .local .item .k { font-size: 0.74rem; color: var(--muted); margin-bottom: 6px; }
+  .local .item .v { font-family: var(--mono); font-size: 0.85rem; color: var(--green); word-break: break-all; }
+
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 980px) {
+    .grid2, .stats { grid-template-columns: 1fr; }
+    .tip-inline { margin-left: 0; }
+  }
+  @media (max-width: 620px) {
+    .hero, .content { padding-left: 18px; padding-right: 18px; }
+    .chart-box { height: 360px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">ECh</div>
+      <div><h1>ECharts 数据可视化 · 双图表联动</h1></div>
+    </div>
+    <p class="sub">
+      两张基于 <b>Apache ECharts 5.5.1</b> 的图表：<b>图 1</b> 用「堆叠柱 + 双轴折线」展示月度服务量与自助解决率，
+      <b>图 2</b> 用饼图 / 环形图 / 南丁格尔玫瑰图展示咨询构成。点击图 2 的扇区，图 1 会<b>联动切换</b>为该类别的月度趋势。
+      ECharts 已下载到 <b>./cdn/echarts/</b>，页面<b>完全离线可用</b>。
+    </p>
+    <div class="jumps">
+      <a class="jump" href="18-3.html">← 18-3 SVG 系统架构图</a>
+      <a class="jump" href="18-2.html">18-2 Canvas 架构图</a>
+      <a class="jump" href="#keys">跳到配置项说明 ↓</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="stats">
+      <div class="stat"><span class="num">2</span><span class="label">ECharts 实例（图表）</span></div>
+      <div class="stat"><span class="num">v5.5.1</span><span class="label">本地 ECharts 版本</span></div>
+      <div class="stat"><span class="num">100% 离线</span><span class="label">依赖已下载至 cdn 目录</span></div>
+      <div class="stat"><span class="num">点击联动</span><span class="label">饼图扇区 → 图 1 数据切换</span></div>
+    </div>
+
+    <!-- 全局配色 -->
+    <div class="section-title"><h2>全局设置</h2><span class="pill">THEME</span><span class="line"></span></div>
+    <div class="toolbar">
+      <div class="group" id="paletteGroup"><span class="lb">图表配色</span></div>
+      <div class="group"><button class="btn" id="resizeBtn">↻ 自适应重绘 resize()</button></div>
+      <span class="tip-inline">数据为课程演示用模拟数据，非真实业务统计</span>
+    </div>
+
+    <!-- ===== 图 1 ===== -->
+    <div class="section-title"><h2>图 1 · 月度服务量与自助解决率</h2><span class="pill">BAR + LINE / DUAL AXIS</span><span class="line"></span></div>
+    <div class="scope" id="scope">
+      <span>当前联动视图：<b id="scopeName">—</b>　图 1 已切换为该类别的月度趋势</span>
+      <button class="btn" id="clearScope">✕ 返回总量视图</button>
+    </div>
+    <section class="chart-card">
+      <div class="head">
+        <h3><span class="dot"></span>服务量趋势</h3>
+        <span class="badge" id="chart1Badge">2026 年 · 全部咨询</span>
+      </div>
+      <div class="toolbar" style="margin-bottom:12px">
+        <div class="group"><span class="lb">年份</span>
+          <select id="yearSel"><option value="2026">2026 年</option><option value="2025">2025 年</option><option value="2024">2024 年</option></select>
+        </div>
+        <div class="group"><span class="lb">图表形式</span>
+          <select id="styleSel">
+            <option value="mix">堆叠柱 + 折线（双轴）</option>
+            <option value="line">平滑折线</option>
+            <option value="area">堆叠面积</option>
+          </select>
+        </div>
+        <div class="group"><label class="check"><input type="checkbox" id="zoomChk" checked>缩放控件 dataZoom</label></div>
+        <div class="group"><button class="btn" id="save1">保存为图片</button></div>
+      </div>
+      <div class="chart-box" id="chart1"></div>
+      <p class="fig-note">
+        <b>读图：</b>柱子为咨询量的构成（自助解决 + 转人工，堆叠后即当月总量），折线为右轴的<b>自助解决率</b>。
+        可用鼠标滚轮 / 底部滑块缩放，右上角工具箱提供数据视图、类型切换、还原与导出图片。
+      </p>
+    </section>
+
+    <!-- ===== 图 2 ===== -->
+    <div class="section-title"><h2>图 2 · 咨询构成分布</h2><span class="pill">PIE / DONUT / ROSE</span><span class="line"></span></div>
+    <div class="toolbar">
+      <div class="group"><span class="lb">统计维度</span>
+        <select id="dimSel"><option value="type">按问题类型</option><option value="channel">按接入渠道</option></select>
+      </div>
+      <div class="group"><span class="lb">图形</span>
+        <select id="pieSel"><option value="donut">环形图</option><option value="pie">饼图</option><option value="rose">南丁格尔玫瑰图</option></select>
+      </div>
+      <div class="group"><label class="check"><input type="checkbox" id="labelChk" checked>显示标签</label></div>
+      <div class="group"><button class="btn primary" id="tryLink">▶ 演示联动</button><button class="btn" id="save2">保存为图片</button></div>
+      <span class="tip-inline">点击任意扇区可联动图 1</span>
+    </div>
+    <div class="grid2">
+      <section class="chart-card">
+        <div class="head"><h3><span class="dot"></span>占比分布</h3><span class="badge" id="chart2Badge">2026 全年 · 问题类型</span></div>
+        <div class="chart-box" id="chart2"></div>
+        <p class="fig-note"><b>读图：</b>扇区角度表示占比；南丁格尔玫瑰图同时用半径编码数值，差异更醒目。点击扇区后，图 1 会显示该类别的月度趋势。</p>
+      </section>
+      <aside class="detail">
+        <h4><span class="dot"></span>扇区详情</h4>
+        <div id="detailBody"></div>
+      </aside>
+    </div>
+
+    <!-- ===== 配置项说明 ===== -->
+    <div class="section-title" id="keys"><h2>ECharts 关键配置项</h2><span class="pill">API NOTES</span><span class="line"></span></div>
+    <div class="cards">
+      <div class="card"><span class="no">1</span><h4>初始化与渲染</h4><p><code>echarts.init(dom)</code> 拿到实例，<code>setOption(option, true)</code> 全量替换配置；第二个参数 <code>true</code> 表示不与旧配置合并，切主题时必须带上。</p></div>
+      <div class="card"><span class="no">2</span><h4>series 与双轴</h4><p>柱与折线放在同一个 <code>series</code> 数组；折线用 <code>yAxisIndex: 1</code> 绑定右侧百分比轴，两根轴分别写进 <code>yAxis: []</code>。</p></div>
+      <div class="card"><span class="no">3</span><h4>tooltip.formatter</h4><p>传入回调函数，用 <code>params</code> 数组自定义悬浮内容，可插入 HTML；本页把当月总量、两项构成和解决率拼成一张小表。</p></div>
+      <div class="card"><span class="no">4</span><h4>dataZoom / toolbox</h4><p><code>dataZoom: [{type:'inside'}, {type:'slider'}]</code> 支持滚轮与滑块；<code>toolbox.feature</code> 提供数据视图、magicType、还原与导出图片。</p></div>
+      <div class="card"><span class="no">5</span><h4>事件与联动</h4><p><code>chart.on('click', ...)</code> 监听扇区点击，改数据源后重新 <code>setOption</code>，即可实现两图联动；也可用 <code>dispatchAction</code> 主动高亮。</p></div>
+      <div class="card"><span class="no">6</span><h4>响应式</h4><p>容器尺寸变化后必须调用 <code>chart.resize()</code>；本页同时监听 <code>window.resize</code> 与 <code>ResizeObserver</code>。</p></div>
+    </div>
+
+    <pre class="code"><span class="c">// ① 引入本地 ECharts（相对路径，离线可用）</span>
+&lt;script src=<span class="s">"./cdn/echarts/echarts.min.js"</span>&gt;&lt;/script&gt;
+
+<span class="c">// ② 初始化两个实例</span>
+<span class="k">const</span> c1 = echarts.<span class="f">init</span>(document.<span class="f">getElementById</span>(<span class="s">'chart1'</span>));
+<span class="k">const</span> c2 = echarts.<span class="f">init</span>(document.<span class="f">getElementById</span>(<span class="s">'chart2'</span>));
+
+<span class="c">// ③ 图 1：堆叠柱 + 双轴折线</span>
+c1.<span class="f">setOption</span>({
+  tooltip: { trigger: <span class="s">'axis'</span> },
+  xAxis:  { type: <span class="s">'category'</span>, data: months },
+  yAxis:  [{ type: <span class="s">'value'</span>, name: <span class="s">'咨询量'</span> },
+           { type: <span class="s">'value'</span>, name: <span class="s">'解决率'</span>, max: <span class="n">100</span> }],
+  dataZoom: [{ type: <span class="s">'inside'</span> }, { type: <span class="s">'slider'</span> }],
+  toolbox: { feature: { dataView: {}, magicType: {}, restore: {}, saveAsImage: {} } },
+  series: [
+    { name: <span class="s">'自助解决量'</span>, type: <span class="s">'bar'</span>, stack: <span class="s">'total'</span>, data: solved },
+    { name: <span class="s">'转人工量'</span>,   type: <span class="s">'bar'</span>, stack: <span class="s">'total'</span>, data: human },
+    { name: <span class="s">'自助解决率'</span>, type: <span class="s">'line'</span>, yAxisIndex: <span class="n">1</span>, smooth: <span class="k">true</span>, data: rates }
+  ]
+}, <span class="k">true</span>);
+
+<span class="c">// ④ 图 2 → 图 1 联动</span>
+c2.<span class="f">on</span>(<span class="s">'click'</span>, p =&gt; {
+  <span class="k">if</span> (p.seriesType !== <span class="s">'pie'</span>) <span class="k">return</span>;
+  <span class="f">renderChart1</span>(dataOf(p.name));   <span class="c">// 重新 setOption(option, true)</span>
+});
+
+<span class="c">// ⑤ 容器尺寸变化后重绘</span>
+window.<span class="f">addEventListener</span>(<span class="s">'resize'</span>, () =&gt; { c1.<span class="f">resize</span>(); c2.<span class="f">resize</span>(); });</pre>
+
+    <div class="local">
+      <div class="item"><div class="k">本地脚本</div><div class="v">./cdn/echarts/echarts.min.js</div></div>
+      <div class="item"><div class="k">版本 / 许可证</div><div class="v">5.5.1 · Apache-2.0</div></div>
+      <div class="item"><div class="k">许可证文件</div><div class="v">./cdn/echarts/LICENSE</div></div>
+      <div class="item"><div class="k">文件大小</div><div class="v">≈ 1.03 MB（minified）</div></div>
+    </div>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 18-4 ECharts 数据可视化 · 朱泊旭</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   18-4 ECharts 双图表联动（本地 echarts 5.5.1）
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+if (typeof echarts === 'undefined') {
+  ['chart1', 'chart2'].forEach(id => {
+    $(id).innerHTML = '<div style="padding:28px;color:#fb7185;font-size:.9rem;line-height:1.8">' +
+      '未加载 ECharts：请确认 <code>./cdn/echarts/echarts.min.js</code> 存在，且页面与 cdn 目录保持在同一级目录。</div>';
+  });
+  throw new Error('echarts.min.js not loaded');
+}
+
+/* ---------- 演示数据（课程用模拟数据） ---------- */
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const YEAR_DATA = {
+  '2024': { total: [8200,7600,9100,9800,10500,11200,11800,12100,10900,12400,15600,14200],
+            rate:  [58,60,61,62,63,64,65,66,67,68,69,70] },
+  '2025': { total: [12400,11800,13600,14200,15100,16300,17200,17800,16600,18900,23400,21500],
+            rate:  [70,71,72,73,74,75,75,76,77,78,79,80] },
+  '2026': { total: [18200,17600,20400,21800,23500,25100,26800,27900,26200,29800,36200,33100],
+            rate:  [80,81,82,83,84,85,85,86,87,88,89,90] }
+};
+const DIMENSIONS = {
+  type: { label: '问题类型', items: [
+    { name: '订单与物流', w: 28, rate: 84, desc: '查询订单状态、修改收货信息、催发货与物流异常，是咨询量最大的一类。' },
+    { name: '支付与退款', w: 22, rate: 78, desc: '支付失败、重复扣款、优惠券未生效、退款进度与到账时间等资金相关问题。' },
+    { name: '账号与登录', w: 18, rate: 92, desc: '注册、验证码、密码找回、设备换绑；流程标准化程度高，自助解决率最高。' },
+    { name: '商品与价格', w: 14, rate: 88, desc: '规格参数、库存、促销价差与比价咨询，可由商品知识库直接回答。' },
+    { name: '售后与维修', w: 11, rate: 71, desc: '退换货、质保、维修网点与工单跟进，通常需要人工核实，转人工率偏高。' },
+    { name: '功能与建议', w: 7,  rate: 65, desc: '产品功能反馈与改进建议，需沉淀为需求并流转到产品团队。' }
+  ] },
+  channel: { label: '接入渠道', items: [
+    { name: 'Web / APP', w: 38, rate: 89, desc: '主站与移动客户端，支持富文本、图片上传与引用溯源，自助解决体验最完整。' },
+    { name: '微信小程序', w: 27, rate: 86, desc: '社交入口，会话轻量、打开频次高，多为订单与物流类短问题。' },
+    { name: '电话语音', w: 16, rate: 63, desc: '经 ASR 转写后进入同一链路，用户年龄层偏大、表述口语化，转人工率最高。' },
+    { name: '开放 API', w: 12, rate: 93, desc: '第三方业务系统调用，问题结构化、参数完整，最适合自动化处理。' },
+    { name: '邮件工单', w: 7,  rate: 74, desc: '异步渠道，常伴随附件与长描述，需要多轮澄清与工单流转。' }
+  ] }
+};
+
+const PALETTES = {
+  aurora: { label: '极光青', colors: ['#67e8f9','#60a5fa','#a78bfa','#34d399','#fbbf24','#f9a8d4'], main: '#67e8f9', second: '#a78bfa', rate: '#fbbf24' },
+  sunset: { label: '日落橙', colors: ['#fbbf24','#fb7185','#f9a8d4','#fb923c','#a78bfa','#67e8f9'], main: '#fbbf24', second: '#fb7185', rate: '#67e8f9' },
+  neon:   { label: '霓虹紫', colors: ['#a78bfa','#67e8f9','#f9a8d4','#818cf8','#34d399','#fbbf24'], main: '#a78bfa', second: '#f9a8d4', rate: '#34d399' }
+};
+
+const state = {
+  year: '2026', style: 'mix', zoom: true,
+  dim: 'type', pie: 'donut', label: true,
+  palette: 'aurora',
+  slice: null, sliceDim: null
+};
+
+const c1 = echarts.init($('chart1'));
+const c2 = echarts.init($('chart2'));
+
+const pal = () => PALETTES[state.palette];
+const num = v => v.toLocaleString('zh-CN');
+const wan = v => (v / 10000).toFixed(1) + '万';
+
+/* ---------- 数据计算 ---------- */
+function seriesData() {
+  const y = YEAR_DATA[state.year];
+  let total = y.total.slice(), rates = y.rate.slice();
+
+  if (state.slice) {
+    const item = DIMENSIONS[state.sliceDim].items.find(i => i.name === state.slice);
+    if (item) {
+      const k = state.sliceDim === 'type' ? 0.7 : 1.3;
+      total = y.total.map((v, m) => Math.round(v * item.w / 100 * (1 + 0.07 * Math.sin((m + k) / 2.1))));
+      rates = y.rate.map((v, m) => Math.min(98, Math.round(item.rate + (v - 85) * 0.35 + 2 * Math.sin((m + k) / 1.8))));
+    }
+  }
+  const solved = total.map((v, i) => Math.round(v * rates[i] / 100));
+  const human = total.map((v, i) => v - solved[i]);
+  return { total: total, solved: solved, human: human, rates: rates };
+}
+
+/* ---------- 通用配置片段 ---------- */
+function axisTheme() {
+  return {
+    axisLine: { lineStyle: { color: 'rgba(155,176,201,0.35)' } },
+    axisTick: { show: false },
+    axisLabel: { color: '#9bb0c9', fontSize: 11 },
+    splitLine: { lineStyle: { color: 'rgba(148,163,184,0.12)', type: 'dashed' } },
+    nameTextStyle: { color: '#9bb0c9', fontSize: 11 }
+  };
+}
+
+function buildSeries(d, P) {
+  const grad = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+    { offset: 0, color: P.main }, { offset: 1, color: P.colors[1] }
+  ]);
+  const grad2 = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+    { offset: 0, color: P.second }, { offset: 1, color: P.colors[4] }
+  ]);
+  const barBase = { type: 'bar', stack: 'total', barMaxWidth: 34, itemStyle: { borderRadius: [4, 4, 0, 0] } };
+  const rateLine = {
+    name: '自助解决率', type: 'line', yAxisIndex: 1, data: d.rates, smooth: true, symbol: 'circle', symbolSize: 7,
+    lineStyle: { width: 3, color: P.rate }, itemStyle: { color: P.rate, borderColor: '#08111d', borderWidth: 2 },
+    z: 5
+  };
+
+  if (state.style === 'line') {
+    return [
+      { name: '咨询总量', type: 'line', data: d.total, smooth: true, symbolSize: 6,
+        lineStyle: { width: 3, color: P.main }, itemStyle: { color: P.main }, areaStyle: { opacity: .08, color: P.main } },
+      { name: '自助解决量', type: 'line', data: d.solved, smooth: true, symbolSize: 6,
+        lineStyle: { width: 2, color: P.colors[3] }, itemStyle: { color: P.colors[3] } },
+      { name: '转人工量', type: 'line', data: d.human, smooth: true, symbolSize: 6,
+        lineStyle: { width: 2, color: P.second }, itemStyle: { color: P.second } },
+      rateLine
+    ];
+  }
+  if (state.style === 'area') {
+    return [
+      Object.assign({}, barBase, { name: '自助解决量', data: d.solved,
+        itemStyle: { color: grad, borderRadius: 0 }, areaStyle: { opacity: .45, color: grad } }),
+      Object.assign({}, barBase, { name: '转人工量', data: d.human,
+        itemStyle: { color: grad2, borderRadius: 0 }, areaStyle: { opacity: .45, color: grad2 } }),
+      rateLine
+    ];
+  }
+  return [
+    Object.assign({}, barBase, { name: '自助解决量', data: d.solved, itemStyle: { color: grad, borderRadius: [0, 0, 0, 0] } }),
+    Object.assign({}, barBase, { name: '转人工量', data: d.human, itemStyle: { color: grad2, borderRadius: [4, 4, 0, 0] } }),
+    rateLine
+  ];
+}
+
+/* ---------- 图 1 ---------- */
+function option1() {
+  const d = seriesData(), P = pal(), ax = axisTheme();
+  const names = ['自助解决量', '转人工量', '自助解决率'];
+  const series = buildSeries(d, P);
+  const legendData = series.map(s => s.name);
+  const scopeTxt = state.slice ? ' · ' + state.slice : '';
+
+  return {
+    backgroundColor: 'transparent',
+    color: P.colors,
+    animationDuration: 700,
+    animationEasing: 'cubicOut',
+    textStyle: { fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif' },
+    grid: { left: 66, right: 66, top: 56, bottom: state.zoom ? 74 : 40 },
+    legend: {
+      data: legendData, top: 6, itemWidth: 14, itemHeight: 9, itemGap: 18,
+      textStyle: { color: '#9bb0c9', fontSize: 11 }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(103,232,249,0.06)' } },
+      backgroundColor: 'rgba(8,16,30,0.95)', borderColor: 'rgba(103,232,249,0.35)', borderWidth: 1,
+      padding: [10, 14], textStyle: { color: '#e5eefc', fontSize: 12 },
+      formatter: function (params) {
+        const i = params[0].dataIndex;
+        let html = '<b style="color:#67e8f9">' + state.year + ' 年 ' + MONTHS[i] + '</b>' + scopeTxt + '<br/>';
+        html += '咨询总量：<b>' + num(d.total[i]) + '</b> 次<br/>';
+        html += '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + P.main + '"></span> 自助解决：<b>' + num(d.solved[i]) + '</b> 次<br/>';
+        html += '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:' + P.second + '"></span> 转人工：<b>' + num(d.human[i]) + '</b> 次<br/>';
+        html += '自助解决率：<b style="color:' + P.rate + '">' + d.rates[i] + '%</b>';
+        return html;
+      }
+    },
+    toolbox: {
+      right: 8, top: 2, itemSize: 14, itemGap: 12,
+      iconStyle: { borderColor: '#9bb0c9' },
+      emphasis: { iconStyle: { borderColor: P.main } },
+      feature: {
+        dataView: { readOnly: true, title: '数据视图', lang: ['数据视图', '关闭', '刷新'] },
+        magicType: { type: ['line', 'bar'], title: { line: '切换为折线图', bar: '切换为柱状图' } },
+        restore: { title: '还原' },
+        saveAsImage: { title: '保存为图片', name: '18-4-' + state.year + '-服务量趋势', pixelRatio: 2, backgroundColor: '#07111f' }
+      }
+    },
+    xAxis: Object.assign({}, ax, {
+      type: 'category', data: MONTHS, boundaryGap: state.style === 'mix',
+      splitLine: { show: false }
+    }),
+    yAxis: [
+      Object.assign({}, ax, {
+        type: 'value', name: '咨询量（次）', nameGap: 16,
+        axisLabel: { color: '#9bb0c9', fontSize: 11, formatter: wan }
+      }),
+      Object.assign({}, ax, {
+        type: 'value', name: '解决率', min: 0, max: 100, nameGap: 16,
+        splitLine: { show: false },
+        axisLabel: { color: '#9bb0c9', fontSize: 11, formatter: '{value}%' }
+      })
+    ],
+    dataZoom: state.zoom ? [
+      { type: 'inside', start: 0, end: 100 },
+      { type: 'slider', height: 18, bottom: 16, start: 0, end: 100,
+        borderColor: 'rgba(148,163,184,0.2)', backgroundColor: 'rgba(2,6,23,0.35)',
+        fillerColor: 'rgba(103,232,249,0.14)', handleStyle: { color: P.main },
+        textStyle: { color: '#9bb0c9', fontSize: 10 } }
+    ] : [],
+    series: series
+  };
+}
+
+/* ---------- 图 2 ---------- */
+function option2() {
+  const P = pal(), dim = DIMENSIONS[state.dim];
+  const radius = state.pie === 'pie' ? '66%' : state.pie === 'donut' ? ['42%', '68%'] : ['22%', '72%'];
+  const data = dim.items.map((it, i) => ({
+    name: it.name, value: it.w,
+    itemStyle: { color: P.colors[i % P.colors.length] }
+  }));
+  return {
+    backgroundColor: 'transparent',
+    color: P.colors,
+    animationDuration: 800,
+    animationType: 'expansion',
+    textStyle: { fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif' },
+    title: state.pie === 'donut' ? {
+      text: state.year + ' 全年', subtext: '咨询构成（模拟数据）',
+      left: '36%', top: '42%', textAlign: 'center',
+      textStyle: { color: '#e5eefc', fontSize: 16, fontWeight: 700 },
+      subtextStyle: { color: '#9bb0c9', fontSize: 11 }
+    } : undefined,
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(8,16,30,0.95)', borderColor: 'rgba(103,232,249,0.35)', borderWidth: 1,
+      textStyle: { color: '#e5eefc', fontSize: 12 },
+      formatter: p => '<b style="color:#67e8f9">' + p.name + '</b><br/>占比：<b>' + p.value + '%</b>（' + p.percent + '%）<br/>点击联动图 1'
+    },
+    legend: {
+      type: 'scroll', orient: 'vertical', right: 8, top: 'middle', itemWidth: 12, itemHeight: 9, itemGap: 14,
+      textStyle: { color: '#9bb0c9', fontSize: 11 },
+      pageTextStyle: { color: '#9bb0c9' }
+    },
+    graphic: [{
+      type: 'text', right: 14, bottom: 10,
+      style: { text: '点击扇区联动图 1', fill: 'rgba(155,176,201,0.7)', fontSize: 10 }
+    }],
+    series: [{
+      name: dim.label, type: 'pie', radius: radius, center: ['36%', '52%'],
+      roseType: state.pie === 'rose' ? 'radius' : undefined,
+      data: data,
+      minAngle: 4,
+      avoidLabelOverlap: true,
+      label: {
+        show: state.label, color: '#e5eefc', fontSize: 11,
+        formatter: state.pie === 'rose' ? '{b}' : '{b}\n{d}%'
+      },
+      labelLine: { show: state.label, length: 8, length2: 10, lineStyle: { color: 'rgba(155,176,201,0.6)' } },
+      itemStyle: { borderColor: '#070f1d', borderWidth: 2, borderRadius: 6 },
+      emphasis: {
+        scale: true, scaleSize: 8,
+        itemStyle: { shadowBlur: 22, shadowColor: 'rgba(0,0,0,0.5)' },
+        label: { fontWeight: 700, fontSize: 12 }
+      },
+      selectedMode: 'single',
+      selectedOffset: 8
+    }]
+  };
+}
+
+/* ---------- 渲染 ---------- */
+function renderChart1() {
+  c1.setOption(option1(), true);
+  $('chart1Badge').textContent = state.year + ' 年 · ' + (state.slice ? state.slice : '全部咨询');
+  const sc = $('scope');
+  if (state.slice) { $('scopeName').textContent = DIMENSIONS[state.sliceDim].label + ' / ' + state.slice; sc.classList.add('show'); }
+  else sc.classList.remove('show');
+}
+function renderChart2() {
+  c2.setOption(option2(), true);
+  $('chart2Badge').textContent = state.year + ' 全年 · ' + DIMENSIONS[state.dim].label;
+}
+function renderAll() { renderChart1(); renderChart2(); }
+
+/* ---------- 扇区详情 ---------- */
+function renderDetail() {
+  const box = $('detailBody');
+  if (!state.slice) {
+    const d = seriesData();
+    const yearTotal = d.total.reduce((a, b) => a + b, 0);
+    box.innerHTML = '<div class="desc">点击左侧任意扇区，查看该类别的详细指标；同时图 1 会切换为该类别的月度趋势。</div>' +
+      '<div class="bar"><i style="width:100%"></i></div>' +
+      '<div class="kv"><span>统计维度</span><b>' + DIMENSIONS[state.dim].label + '</b>' +
+      '<span>类别数</span><b>' + DIMENSIONS[state.dim].items.length + ' 类</b>' +
+      '<span>年咨询量</span><b class="hl">' + num(yearTotal) + ' 次</b>' +
+      '<span>联动状态</span><b>未筛选（总量视图）</b></div>';
+    return;
+  }
+  const it = DIMENSIONS[state.sliceDim].items.find(i => i.name === state.slice);
+  if (!it) return;
+  const yearTotal = YEAR_DATA[state.year].total.reduce((a, b) => a + b, 0);
+  const est = Math.round(yearTotal * it.w / 100);
+  box.innerHTML = '<div class="nm">' + it.name + '</div>' +
+    '<div class="desc">' + it.desc + '</div>' +
+    '<div class="bar"><i style="width:' + Math.min(100, it.w / 30 * 100) + '%"></i></div>' +
+    '<div class="kv">' +
+      '<span>所属维度</span><b>' + DIMENSIONS[state.sliceDim].label + '</b>' +
+      '<span>占比</span><b class="hl">' + it.w + '%</b>' +
+      '<span>年咨询量</span><b>约 ' + num(est) + ' 次</b>' +
+      '<span>自助解决率</span><b>' + it.rate + '%</b>' +
+      '<span>联动状态</span><b>图 1 已切换</b>' +
+    '</div>';
+}
+
+/* ---------- 控件 ---------- */
+const pg = $('paletteGroup');
+Object.keys(PALETTES).forEach(k => {
+  const b = document.createElement('button');
+  b.className = 'swatch' + (k === state.palette ? ' on' : '');
+  b.title = PALETTES[k].label;
+  b.dataset.pal = k;
+  b.style.background = 'linear-gradient(135deg,' + PALETTES[k].colors[0] + ',' + PALETTES[k].colors[2] + ')';
+  b.onclick = () => {
+    state.palette = k;
+    pg.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x.dataset.pal === k));
+    renderAll();
+  };
+  pg.appendChild(b);
+});
+
+$('yearSel').onchange = e => { state.year = e.target.value; renderAll(); renderDetail(); };
+$('styleSel').onchange = e => { state.style = e.target.value; renderChart1(); };
+$('zoomChk').onchange = e => { state.zoom = e.target.checked; renderChart1(); };
+$('dimSel').onchange = e => {
+  state.dim = e.target.value; state.slice = null; state.sliceDim = null;
+  renderAll(); renderDetail();
+};
+$('pieSel').onchange = e => { state.pie = e.target.value; renderChart2(); };
+$('labelChk').onchange = e => { state.label = e.target.checked; renderChart2(); };
+$('clearScope').onclick = () => { state.slice = null; state.sliceDim = null; renderChart1(); renderDetail(); };
+$('resizeBtn').onclick = () => {
+  c1.resize(); c2.resize();
+  const b = $('resizeBtn'); const old = b.textContent;
+  b.textContent = '✓ 已重绘'; setTimeout(() => { b.textContent = old; }, 1200);
+};
+$('save1').onclick = () => {
+  const a = document.createElement('a');
+  a.download = '18-4-' + state.year + '-服务量趋势.png';
+  a.href = c1.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#07111f' });
+  a.click();
+};
+$('save2').onclick = () => {
+  const a = document.createElement('a');
+  a.download = '18-4-' + DIMENSIONS[state.dim].label + '-占比分布.png';
+  a.href = c2.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#07111f' });
+  a.click();
+};
+
+/* ---------- 图 2 → 图 1 联动 ---------- */
+function applySlice(name) {
+  state.slice = name;
+  state.sliceDim = state.dim;
+  renderChart1();
+  renderDetail();
+}
+c2.on('click', p => {
+  if (p.componentType !== 'series' || p.seriesType !== 'pie') return;
+  applySlice(p.name);
+  if (window.innerWidth < 980) $('chart1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+let demoIdx = 0;
+$('tryLink').onclick = () => {
+  const items = DIMENSIONS[state.dim].items;
+  applySlice(items[demoIdx % items.length].name);
+  c2.dispatchAction({ type: 'pieSelect', seriesIndex: 0, dataIndex: demoIdx % items.length });
+  demoIdx++;
+};
+
+/* ---------- 响应式 ---------- */
+window.addEventListener('resize', () => { c1.resize(); c2.resize(); });
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(() => { c1.resize(); c2.resize(); });
+  ro.observe($('chart1')); ro.observe($('chart2'));
+}
+
+/* ---------- 初始化 ---------- */
+// 支持锚点直达，如 #style=line&pie=rose&pal=sunset&slice=订单与物流，便于课堂演示与分享
+const qs = new URLSearchParams(location.hash.slice(1));
+const st = qs.get('style'), pi = qs.get('pie'), pa = qs.get('pal'), sl = qs.get('slice');
+if (st && ['mix', 'line', 'area'].indexOf(st) >= 0) { state.style = st; $('styleSel').value = st; }
+if (pi && ['donut', 'pie', 'rose'].indexOf(pi) >= 0) { state.pie = pi; $('pieSel').value = pi; }
+if (pa && PALETTES[pa]) {
+  state.palette = pa;
+  pg.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x.dataset.pal === pa));
+}
+renderAll();
+renderDetail();
+if (sl && DIMENSIONS[state.dim].items.some(i => i.name === sl)) applySlice(sl);
+</script>
+</body>
+</html>

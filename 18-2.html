@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-2 · Canvas 电商全站系统架构图</title>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1280px, 100%);
+    background: rgba(10, 16, 28, 0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative; padding: 48px 48px 26px;
+    background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)), rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: .8; }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 22px; color: #08111d; font-family: var(--mono);
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.7rem, 2.5vw, 2.6rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 940px; color: var(--muted); line-height: 1.8; }
+  .hero .sub b { color: var(--cyan); }
+  .jump {
+    position: relative; z-index: 1; display: inline-block; margin-top: 12px;
+    color: var(--cyan); text-decoration: none; font-size: 0.86rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .jump:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 14px; }
+  .section-title h2 { margin: 0; font-size: 1.25rem; }
+  .section-title .line { flex: 1; height: 1px; background: var(--line); }
+  .section-title .pill { font-size: 0.76rem; color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.25); padding: 3px 10px; border-radius: 999px; }
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group > .lb { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 8px 14px; border-radius: 10px; font-size: 0.84rem; transition: all .18s;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 800; }
+  select {
+    background: rgba(2, 6, 23, 0.55); border: 1px solid var(--line); color: var(--text);
+    padding: 8px 12px; border-radius: 10px; font-size: 0.84rem; outline: none;
+  }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--cyan); }
+  .tip-inline { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+
+  /* ---------- 图例 ---------- */
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin: 0 0 12px 4px; }
+  .legend .item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); }
+  .legend .stroke { width: 34px; height: 0; border-top: 2px solid; }
+  .legend .stroke.dash { border-top-style: dashed; }
+  .legend .dotm { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+
+  /* ---------- 画布 ---------- */
+  .canvas-scroll {
+    overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius);
+    background: #050b16; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 40px rgba(2, 6, 23, 0.4);
+  }
+  #archCanvas { display: block; width: 100%; min-width: 900px; height: auto; cursor: default; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .stat {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+  }
+  .stat .num { display: block; font-family: var(--mono); font-size: 1.15rem; font-weight: 800; color: var(--cyan); }
+  .stat .label { color: var(--muted); font-size: 0.78rem; }
+
+  /* ---------- 详情区 ---------- */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .panel h3 { margin: 0 0 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .node-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .node-head .nm { font-size: 1.15rem; font-weight: 800; }
+  .badge { font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; border: 1px solid; }
+  .panel .desc { color: var(--muted); font-size: 0.86rem; line-height: 1.8; margin: 0 0 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .tag { font-family: var(--mono); font-size: 0.74rem; padding: 4px 9px; border-radius: 8px; background: rgba(103, 232, 249, 0.1); color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.24); }
+  .kv { display: grid; grid-template-columns: 84px 1fr; gap: 8px; font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
+  .kv b { color: var(--text); font-weight: 600; }
+  ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding: 8px 0 8px 34px;
+    font-size: 0.84rem; color: var(--muted); line-height: 1.7;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 9px;
+    width: 22px; height: 22px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 800; color: #08111d;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+  }
+  ol.steps li b { color: var(--text); }
+
+  /* ---------- 表格 / 卡片 ---------- */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 660px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 0.84rem; }
+  th { color: var(--cyan); font-size: 0.78rem; }
+  tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+  td .lyr { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+  td .lyr i { width: 8px; height: 8px; border-radius: 3px; display: inline-block; }
+  td.mono { font-family: var(--mono); color: var(--amber); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h4 { margin: 0 0 8px; font-size: 0.95rem; color: var(--cyan); }
+  .card p { margin: 0; color: var(--muted); font-size: 0.83rem; line-height: 1.75; }
+  .card code { font-family: var(--mono); color: var(--amber); font-size: 0.8rem; }
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 900px) {
+    .detail-grid, .stats { grid-template-columns: 1fr; }
+    .tip-inline { margin-left: 0; }
+  }
+  @media (max-width: 620px) {
+    .hero, .content { padding-left: 18px; padding-right: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">ARC</div>
+      <div><h1>Canvas 电商全站系统架构图</h1></div>
+    </div>
+    <p class="sub">
+      从 <b>客户端</b>到 <b>数据存储</b>共 6 层、28 个节点，全部由 <b>canvas 2D</b> 绘制：
+      分层带、服务卡片、贝塞尔连线、流动的数据包都是逐帧画出来的。
+      选择链路可单独高亮一条请求路径；<b>点击任意节点</b>可查看职责、技术选型与上下游依赖。
+    </p>
+    <a class="jump" href="18-1.html">← 返回 18-1 Canvas 动画</a>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <div class="group">
+        <span class="lb">高亮链路</span>
+        <select id="chainSel">
+          <option value="all">全部链路</option>
+          <option value="order">下单支付链路</option>
+          <option value="search">搜索浏览链路</option>
+          <option value="login">登录鉴权链路</option>
+          <option value="ops">运维观测链路</option>
+        </select>
+      </div>
+      <div class="group">
+        <button class="btn primary" id="playBtn">⏸ 暂停流动</button>
+        <button class="btn" id="clearBtn">重置选中</button>
+        <button class="btn" id="saveBtn">保存 PNG</button>
+      </div>
+      <div class="group">
+        <label class="check"><input type="checkbox" id="gridChk" checked>背景网格</label>
+        <label class="check"><input type="checkbox" id="labelChk" checked>连线标签</label>
+      </div>
+      <span class="tip-inline">提示：鼠标悬停高亮，点击查看节点详情</span>
+    </div>
+
+    <div class="legend">
+      <span class="item"><i class="stroke" style="border-color:#67e8f9"></i>同步请求 / RPC</span>
+      <span class="item"><i class="stroke dash" style="border-color:#a78bfa"></i>异步消息 MQ</span>
+      <span class="item"><i class="stroke" style="border-color:#34d399"></i>数据读写</span>
+      <span class="item"><i class="stroke" style="border-color:#f9a8d4"></i>运维 / 观测</span>
+      <span class="item"><i class="dotm" style="color:#67e8f9;background:#67e8f9"></i>流动的数据包</span>
+    </div>
+
+    <div class="canvas-scroll">
+      <canvas id="archCanvas"></canvas>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="num" id="stLayers">6</span><span class="label">架构分层</span></div>
+      <div class="stat"><span class="num" id="stNodes">28</span><span class="label">系统节点</span></div>
+      <div class="stat"><span class="num" id="stLinks">—</span><span class="label">依赖连线</span></div>
+      <div class="stat"><span class="num" id="stChain">全部链路</span><span class="label">当前高亮</span></div>
+    </div>
+
+    <div class="section-title"><h2>节点与链路详情</h2><span class="pill">点击画布交互</span><span class="line"></span></div>
+    <div class="detail-grid">
+      <section class="panel" id="nodePanel">
+        <h3><span class="dot"></span>节点详情</h3>
+        <div id="nodeBody"></div>
+      </section>
+      <section class="panel">
+        <h3><span class="dot"></span>链路走查</h3>
+        <div id="chainName" style="font-size:0.9rem;font-weight:700;margin-bottom:8px"></div>
+        <ol class="steps" id="chainSteps"></ol>
+      </section>
+    </div>
+
+    <div class="section-title"><h2>分层职责</h2><span class="pill">自顶向下</span><span class="line"></span></div>
+    <section class="panel table-wrap">
+      <table>
+        <thead><tr><th>层次</th><th>核心职责</th><th>典型技术</th><th>节点数</th></tr></thead>
+        <tbody id="layerBody"></tbody>
+      </table>
+    </section>
+
+    <div class="section-title"><h2>关键设计要点</h2><span class="pill">高并发电商</span><span class="line"></span></div>
+    <div class="cards">
+      <div class="card"><h4>缓存与读多写少</h4><p>商品详情、类目、首页数据放 <code>Redis</code>，用「先删缓存再更新库 + 过期时间」降低不一致风险。</p></div>
+      <div class="card"><h4>MQ 削峰解耦</h4><p>下单后把发货、短信、积分、数据同步交给 <code>RocketMQ</code>，核心链路只保留必要同步调用。</p></div>
+      <div class="card"><h4>库存防超卖</h4><p>Redis 预扣减 + 数据库最终一致，配合幂等键与分布式锁，避免重复下单和超卖。</p></div>
+      <div class="card"><h4>搜索与库分离</h4><p>商品变更通过消息同步到 <code>Elasticsearch</code>，复杂检索不压 MySQL，主库只承担事务写入。</p></div>
+      <div class="card"><h4>网关统一治理</h4><p>鉴权、限流、灰度、熔断集中在 API 网关；<code>Nacos</code> 负责服务注册与配置下发。</p></div>
+      <div class="card"><h4>可观测与安全</h4><p>全链路日志进 <code>ELK</code>，指标进 Prometheus / Grafana，风控服务识别刷单与异常支付。</p></div>
+    </div>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 18-2 Canvas 系统架构图 · 朱泊旭</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   18-2 基于 Canvas 的电商全站系统架构图
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const cv = $('archCanvas');
+const ctx = cv.getContext('2d');
+const W = 1160, H = 880;
+let dpr = 1, t = 0, paused = false, showGrid = true, showLabel = true;
+let chain = 'all', hoverId = null, selectedId = null, lastTs = 0;
+
+const TYPE = {
+  req:   { color: '#67e8f9', dash: [], label: '同步' },
+  async: { color: '#a78bfa', dash: [6, 5], label: '异步' },
+  data:  { color: '#34d399', dash: [], label: '数据' },
+  ops:   { color: '#f9a8d4', dash: [3, 4], label: '观测' }
+};
+
+const LAYERS = [
+  { id: 'client',  name: '客户端层',   en: 'CLIENT',    sub: '多端触达',   duty: '多端触达与交互呈现', tech: 'Vue3 / 小程序 / APP / SSR', y: 52,  h: 106, color: '#60a5fa', rows: 1 },
+  { id: 'gateway', name: '接入网关层', en: 'GATEWAY',   sub: '统一入口',   duty: '统一入口、加速、鉴权与限流', tech: 'CDN / WAF / Nginx / Spring Cloud Gateway', y: 176, h: 106, color: '#67e8f9', rows: 1 },
+  { id: 'service', name: '业务服务层', en: 'SERVICES',  sub: '领域拆分',   duty: '按领域拆分的微服务集群', tech: 'Spring Boot / Dubbo / K8s', y: 300, h: 200, color: '#a78bfa', rows: 2 },
+  { id: 'middle',  name: '中间件层',   en: 'MIDDLEWARE', sub: '解耦 · 加速', duty: '缓存、异步解耦、检索与治理', tech: 'Redis / RocketMQ / ES / Nacos', y: 518, h: 106, color: '#fbbf24', rows: 1 },
+  { id: 'data',    name: '数据存储层', en: 'STORAGE',   sub: '持久化',     duty: '业务持久化、文件与离线分析', tech: 'MySQL / OSS / Hive / ELK', y: 642, h: 106, color: '#34d399', rows: 1 },
+  { id: 'ops',     name: '运维支撑层', en: 'OPS',       sub: '可观测 · 安全', duty: '监控告警、持续交付与安全风控', tech: 'Prometheus / Jenkins / 风控引擎', y: 766, h: 94,  color: '#f9a8d4', rows: 1 }
+];
+
+const NODES = [
+  { id: 'web',       layer: 'client',  title: 'PC / H5 商城',   sub: 'Vue3 + SSR',      desc: '面向浏览器的主站入口，承担首页、商详、下单流程；SSR 提升首屏与 SEO。', tech: ['Vue3', 'Vite', 'Nuxt SSR'] },
+  { id: 'mini',      layer: 'client',  title: '微信小程序',     sub: '原生 / uni-app',  desc: '微信生态内的轻量化购物入口，复用同一套后端 API 与登录体系。', tech: ['小程序', 'uni-app', '微信登录'] },
+  { id: 'app',       layer: 'client',  title: '移动 APP',       sub: 'iOS / Android',   desc: '原生客户端，支持推送、离线缓存与更完整的会员体验。', tech: ['iOS', 'Android', 'Push'] },
+  { id: 'admin',     layer: 'client',  title: '运营管理后台',   sub: 'RBAC 权限',       desc: '供运营、客服使用的商品上下架、活动配置、订单处理与数据看板。', tech: ['React', 'RBAC', 'ECharts'] },
+
+  { id: 'cdn',       layer: 'gateway', title: 'CDN / WAF',      sub: '静态加速 · 防刷', desc: '图片、JS、CSS 等静态资源就近分发，WAF 拦截恶意流量与常见 Web 攻击。', tech: ['CDN', 'WAF', 'HTTPS'] },
+  { id: 'slb',       layer: 'gateway', title: 'SLB / Nginx',    sub: '负载均衡 · 卸载', desc: '四层/七层负载均衡，TLS 卸载，把流量均匀打到网关集群。', tech: ['Nginx', 'LVS', 'Keepalived'] },
+  { id: 'api',       layer: 'gateway', title: 'API 网关',       sub: '鉴权 · 限流 · 路由', desc: '统一入口：JWT 校验、限流熔断、灰度路由、请求日志，再转发到各微服务。', tech: ['Gateway', 'JWT', 'Sentinel'] },
+
+  { id: 'user',      layer: 'service', title: '用户中心',       sub: '登录 / 会员',     desc: '账号、实名、收货地址、会员等级与积分，对外提供统一身份鉴权能力。', tech: ['Spring Boot', 'JWT', 'OAuth2'] },
+  { id: 'goods',     layer: 'service', title: '商品中心',       sub: 'SPU / SKU',       desc: '类目、品牌、SPU/SKU、价格与上下架管理，是商品数据的唯一写入方。', tech: ['Spring Boot', 'MySQL', 'Canal'] },
+  { id: 'search',    layer: 'service', title: '搜索服务',       sub: '检索 / 推荐',     desc: '关键词、筛选、排序、联想词与个性化推荐，读多写少，重度依赖缓存与索引。', tech: ['Elasticsearch', 'Redis', '召回排序'] },
+  { id: 'cart',      layer: 'service', title: '购物车',         sub: '勾选 / 计价',     desc: '管理加购、勾选与实时计价，结算时校验库存与优惠后生成订单快照。', tech: ['Redis Hash', 'Spring Boot'] },
+  { id: 'order',     layer: 'service', title: '订单服务',       sub: '下单 / 状态机',   desc: '核心交易服务：订单创建、状态流转、超时关单、幂等控制与分布式事务协调。', tech: ['Spring Boot', 'Seata', '状态机'] },
+  { id: 'pay',       layer: 'service', title: '支付服务',       sub: '支付 / 回调',     desc: '对接微信、支付宝等渠道，处理支付单、异步回调对账与退款。', tech: ['支付 SDK', '幂等', '对账'] },
+  { id: 'stock',     layer: 'service', title: '库存服务',       sub: '扣减 / 防超卖',   desc: '可售库存、锁定与释放，借助 Redis 原子扣减 + 最终一致防止超卖。', tech: ['Redis Lua', 'MySQL', '分布式锁'] },
+  { id: 'promo',     layer: 'service', title: '营销中心',       sub: '优惠券 / 秒杀',   desc: '优惠券、满减、秒杀活动与资格校验，为下单提供优惠计算。', tech: ['Redis', '限流', '活动规则引擎'] },
+  { id: 'logistics', layer: 'service', title: '物流售后',       sub: '发货 / 退换',     desc: '对接快递、发货回传、退货退款与售后工单，消费订单消息驱动。', tech: ['MQ 消费', '快递 API', '工单'] },
+  { id: 'notify',    layer: 'service', title: '消息通知',       sub: '短信 / 站内信',   desc: '统一发送短信、邮件、App 推送与站内信，异步消费保证主流程不被拖慢。', tech: ['RocketMQ', '短信网关', '模板'] },
+
+  { id: 'redis',     layer: 'middle',  title: 'Redis 集群',     sub: '缓存 / 会话',     desc: '热点数据缓存、登录会话、购物车、库存预扣与分布式锁。', tech: ['Redis Cluster', 'Lua', '哨兵'] },
+  { id: 'mq',        layer: 'middle',  title: 'RocketMQ',       sub: '异步解耦 / 削峰', desc: '订单创建、支付成功、商品变更等事件总线，支撑最终一致与流量削峰。', tech: ['RocketMQ', '事务消息', '重试队列'] },
+  { id: 'es',        layer: 'middle',  title: 'Elasticsearch',  sub: '商品索引',        desc: '商品倒排索引与聚合筛选，由商品变更消息持续同步。', tech: ['ES', 'IK 分词', 'Canal'] },
+  { id: 'nacos',     layer: 'middle',  title: 'Nacos',          sub: '注册 / 配置',     desc: '服务注册发现、健康检查与动态配置下发，支撑灰度与扩缩容。', tech: ['Nacos', '健康检查', '配置中心'] },
+
+  { id: 'mysql',     layer: 'data',    title: 'MySQL 主从',     sub: '读写分离 / 分库', desc: '订单、用户、商品等核心业务数据；主从读写分离，大表按用户或订单分库分表。', tech: ['MySQL', 'ShardingSphere', 'Binlog'] },
+  { id: 'oss',       layer: 'data',    title: 'OSS 对象存储',   sub: '图片 / 视频',     desc: '商品图、详情富文本资源与视频，配合 CDN 回源分发。', tech: ['OSS', '图片处理', 'CDN 回源'] },
+  { id: 'dw',        layer: 'data',    title: '数据仓库',       sub: 'Hive / BI 报表',  desc: '离线数仓与实时看板，沉淀交易、流量、转化等经营指标。', tech: ['Hive', 'Spark', 'BI'] },
+  { id: 'elk',       layer: 'data',    title: '日志中心',       sub: 'ELK 检索',        desc: '集中收集全链路日志与链路追踪，支撑排障与审计。', tech: ['ELK', 'TraceId', 'Filebeat'] },
+
+  { id: 'monitor',   layer: 'ops',     title: '监控告警',       sub: 'Prometheus',      desc: '采集 QPS、延迟、错误率与资源指标，异常自动告警。', tech: ['Prometheus', 'Grafana', 'AlertManager'] },
+  { id: 'cicd',      layer: 'ops',     title: 'CI / CD',        sub: 'Jenkins + K8s',   desc: '代码构建、镜像打包、灰度发布与滚动回滚。', tech: ['Jenkins', 'Docker', 'Kubernetes'] },
+  { id: 'risk',      layer: 'ops',     title: '安全风控',       sub: '反爬 / 风控',     desc: '识别刷单、薅羊毛、异常支付与账号风险，输出拦截决策。', tech: ['规则引擎', '设备指纹', '限流'] }
+];
+const NODE = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+// from / to / type / chains / label
+const LINKS = [
+  { from: 'web', to: 'cdn', type: 'req', chains: ['order', 'search'] },
+  { from: 'mini', to: 'cdn', type: 'req', chains: ['login', 'order'] },
+  { from: 'app', to: 'cdn', type: 'req', chains: ['search', 'order'] },
+  { from: 'admin', to: 'cdn', type: 'req', chains: ['ops'] },
+  { from: 'cdn', to: 'slb', type: 'req', chains: ['order', 'search', 'login', 'ops'] },
+  { from: 'slb', to: 'api', type: 'req', chains: ['order', 'search', 'login', 'ops'] },
+
+  { from: 'api', to: 'user', type: 'req', chains: ['login'] },
+  { from: 'api', to: 'goods', type: 'req', chains: ['search'] },
+  { from: 'api', to: 'search', type: 'req', chains: ['search'] },
+  { from: 'api', to: 'cart', type: 'req', chains: ['order'] },
+  { from: 'api', to: 'order', type: 'req', chains: ['order'] },
+  { from: 'api', to: 'pay', type: 'req', chains: ['order'] },
+  { from: 'api', to: 'promo', type: 'req', chains: ['order'] },
+  { from: 'api', to: 'logistics', type: 'req', chains: ['ops'] },
+
+  { from: 'cart', to: 'order', type: 'req', chains: ['order'], label: '结算' },
+  { from: 'promo', to: 'order', type: 'req', chains: ['order'], label: '算价' },
+  { from: 'order', to: 'stock', type: 'req', chains: ['order'], label: '锁库存' },
+  { from: 'order', to: 'pay', type: 'req', chains: ['order'], label: '发起支付' },
+  { from: 'pay', to: 'order', type: 'async', chains: ['order'], label: '支付回调' },
+  { from: 'order', to: 'mysql', type: 'data', chains: ['order'], label: '落库' },
+  { from: 'stock', to: 'redis', type: 'data', chains: ['order'], label: '原子扣减' },
+  { from: 'user', to: 'redis', type: 'data', chains: ['login'], label: '会话' },
+  { from: 'user', to: 'mysql', type: 'data', chains: ['login'] },
+  { from: 'search', to: 'es', type: 'data', chains: ['search'], label: '检索' },
+  { from: 'search', to: 'redis', type: 'data', chains: ['search'], label: '热词' },
+  { from: 'goods', to: 'mysql', type: 'data', chains: ['search'] },
+  { from: 'goods', to: 'mq', type: 'async', chains: ['search'], label: '变更事件' },
+  { from: 'mq', to: 'es', type: 'async', chains: ['search'], label: '索引同步' },
+  { from: 'goods', to: 'oss', type: 'data', chains: ['search'], label: '图片' },
+  { from: 'pay', to: 'mq', type: 'async', chains: ['order'], label: '支付成功' },
+  { from: 'order', to: 'mq', type: 'async', chains: ['order'], label: '订单创建' },
+  { from: 'mq', to: 'logistics', type: 'async', chains: ['order'], label: '触发发货' },
+  { from: 'mq', to: 'notify', type: 'async', chains: ['order'], label: '发通知' },
+  { from: 'mysql', to: 'dw', type: 'async', chains: ['ops'], label: '数据同步' },
+  { from: 'api', to: 'nacos', type: 'ops', chains: ['login', 'ops'], label: '服务发现' },
+  { from: 'api', to: 'elk', type: 'ops', chains: ['ops'], label: '访问日志' },
+  { from: 'order', to: 'monitor', type: 'ops', chains: ['ops'], label: '指标' },
+  { from: 'pay', to: 'risk', type: 'ops', chains: ['ops'], label: '风控' }
+];
+
+const CHAIN_INFO = {
+  all: { name: '全部链路总览', steps: [
+    '<b>客户端层</b>：PC/H5、小程序、APP、运营后台四类入口，共用同一套后端接口。',
+    '<b>接入层</b>：CDN 加速静态资源 → SLB 负载均衡 → API 网关做鉴权、限流与路由。',
+    '<b>服务层</b>：按领域拆成 10 个微服务，订单/支付/库存构成交易核心。',
+    '<b>中间件层</b>：Redis 抗读、RocketMQ 削峰、ES 检索、Nacos 治理。',
+    '<b>数据层</b>：MySQL 主从承载事务，OSS 存图片，数仓与 ELK 支撑分析与排障。',
+    '<b>运维层</b>：监控、CI/CD、风控横向覆盖所有层次。'
+  ] },
+  order: { name: '下单支付链路', steps: [
+    '<b>用户结算</b>：购物车勾选商品，网关校验登录态后请求订单服务。',
+    '<b>算价与优惠</b>：营销中心计算优惠券/满减，商品中心提供价格快照。',
+    '<b>锁库存</b>：库存服务通过 Redis Lua 原子预扣，防超卖；失败则回滚。',
+    '<b>创建订单</b>：订单服务落库 MySQL，写入幂等键并启动超时关单定时器。',
+    '<b>发起支付</b>：支付服务创建支付单，渠道异步回调后更新订单状态。',
+    '<b>消息驱动</b>：订单创建 / 支付成功事件进 RocketMQ，异步触发发货与短信通知。',
+    '<b>履约完成</b>：物流服务回传运单，订单状态机推进至已发货 / 已完成。'
+  ] },
+  search: { name: '搜索浏览链路', steps: [
+    '<b>请求入口</b>：APP / H5 的关键字、筛选与排序条件经 CDN、SLB 到 API 网关。',
+    '<b>搜索服务</b>：先查 Redis 热词缓存，未命中再走 Elasticsearch。',
+    '<b>ES 检索</b>：倒排索引 + IK 分词 + 聚合筛选，返回商品 ID 列表。',
+    '<b>补全详情</b>：按 ID 批量读商品中心与 MySQL，图片走 OSS + CDN。',
+    '<b>索引同步</b>：商品上下架/改价产生变更事件，经 MQ 异步刷新 ES 索引。',
+    '<b>结果缓存</b>：热门查询结果回写 Redis，降低 ES 与数据库压力。'
+  ] },
+  login: { name: '登录鉴权链路', steps: [
+    '<b>发起登录</b>：小程序 / H5 提交凭证，经网关做基础限流与签名校验。',
+    '<b>用户中心</b>：校验账号或第三方授权，签发 JWT 与刷新令牌。',
+    '<b>会话写入</b>：登录态、权限与设备信息写入 Redis 集群，设置过期时间。',
+    '<b>账号落库</b>：用户信息、会员等级、收货地址持久化到 MySQL 主库。',
+    '<b>服务发现</b>：网关从 Nacos 获取用户中心实例列表并做负载均衡。',
+    '<b>后续请求</b>：JWT 在网关统一校验，业务服务无需重复实现鉴权。'
+  ] },
+  ops: { name: '运维观测链路', steps: [
+    '<b>日志采集</b>：网关与各服务输出带 TraceId 的日志，汇总到 ELK。',
+    '<b>指标上报</b>：QPS、P99 延迟、错误率、JVM 指标进入 Prometheus / Grafana。',
+    '<b>数据同步</b>：MySQL Binlog 汇总到数据仓库，产出经营报表。',
+    '<b>发布交付</b>：Jenkins 构建镜像，K8s 灰度发布与滚动回滚。',
+    '<b>安全风控</b>：支付与下单请求送风控引擎，识别刷单与异常行为。',
+    '<b>告警闭环</b>：阈值触发告警，结合链路日志快速定位故障节点。'
+  ] }
+};
+
+/* ---------- 布局 ---------- */
+const AREA_X = 150, AREA_W = W - AREA_X - 26;
+function layout() {
+  LAYERS.forEach(L => {
+    const list = NODES.filter(n => n.layer === L.id);
+    const per = Math.ceil(list.length / L.rows);
+    const gap = 12, nh = 60, rowGap = 14;
+    const nw = (AREA_W - gap * (per - 1)) / per;
+    const totalH = L.rows * nh + (L.rows - 1) * rowGap;
+    const startY = L.y + (L.h - totalH) / 2;
+    list.forEach((n, i) => {
+      const r = Math.floor(i / per), c = i % per;
+      const inRow = Math.min(per, list.length - r * per);
+      const rowW = inRow * nw + (inRow - 1) * gap;
+      const x0 = AREA_X + (AREA_W - rowW) / 2;
+      n.x = x0 + c * (nw + gap);
+      n.y = startY + r * (nh + rowGap);
+      n.w = nw; n.h = nh; n.color = L.color;
+      const layer = LAYERS.find(x => x.id === n.layer);
+      n.layerName = layer.name;
+    });
+  });
+  LINKS.forEach((l, i) => { l.path = linkPath(l); l.phase = (i * 0.137) % 1; });
+}
+
+function linkPath(l) {
+  const a = NODE[l.from], b = NODE[l.to];
+  const sameRow = Math.abs(a.y - b.y) < 10;
+  let p0, p1, c1, c2;
+  if (sameRow) {
+    const lift = 22;
+    p0 = { x: a.x + a.w / 2, y: a.y };
+    p1 = { x: b.x + b.w / 2, y: b.y };
+    c1 = { x: p0.x, y: p0.y - lift };
+    c2 = { x: p1.x, y: p1.y - lift };
+  } else {
+    const down = b.y > a.y;
+    p0 = down ? { x: a.x + a.w / 2, y: a.y + a.h } : { x: a.x + a.w / 2, y: a.y };
+    p1 = down ? { x: b.x + b.w / 2, y: b.y } : { x: b.x + b.w / 2, y: b.y + b.h };
+    const dy = p1.y - p0.y;
+    const bend = Math.max(12, Math.min(64, Math.abs(dy) * 0.42));
+    const dir = dy >= 0 ? 1 : -1;
+    c1 = { x: p0.x, y: p0.y + dir * bend };
+    c2 = { x: p1.x, y: p1.y - dir * bend };
+  }
+  return { p0: p0, p1: p1, c1: c1, c2: c2 };
+}
+function bezier(p, u) {
+  const v = 1 - u;
+  return {
+    x: v * v * v * p.p0.x + 3 * v * v * u * p.c1.x + 3 * v * u * u * p.c2.x + u * u * u * p.p1.x,
+    y: v * v * v * p.p0.y + 3 * v * v * u * p.c1.y + 3 * v * u * u * p.c2.y + u * u * u * p.p1.y
+  };
+}
+function roundRect(c, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+/* ---------- 绘制 ---------- */
+function drawBg() {
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#061426'); g.addColorStop(0.55, '#081225'); g.addColorStop(1, '#0a1020');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (showGrid) {
+    ctx.strokeStyle = 'rgba(148,163,184,0.045)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 32) { ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, H); }
+    for (let y = 0; y <= H; y += 32) { ctx.moveTo(0, y + .5); ctx.lineTo(W, y + .5); }
+    ctx.stroke();
+  }
+  const rg = ctx.createRadialGradient(W / 2, H * 0.42, 20, W / 2, H * 0.42, W * 0.65);
+  rg.addColorStop(0, 'rgba(96,165,250,0.07)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#e5eefc';
+  ctx.font = '700 17px "Microsoft YaHei",sans-serif';
+  ctx.fillText('电商全站系统 · 分层架构', 24, 30);
+  ctx.fillStyle = 'rgba(155,176,201,0.75)';
+  ctx.font = '11px "Cascadia Code",Consolas,monospace';
+  ctx.fillText('E-COMMERCE FULL-STACK ARCHITECTURE', 240, 29);
+  ctx.textAlign = 'right';
+  ctx.fillText('CANVAS RENDERED · 6 LAYERS / ' + NODES.length + ' NODES', W - 24, 29);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.moveTo(24, 41.5); ctx.lineTo(W - 24, 41.5); ctx.stroke();
+}
+
+function drawLayers() {
+  LAYERS.forEach(L => {
+    roundRect(ctx, 20, L.y, W - 40, L.h, 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.017)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.055)'; ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.save();
+    roundRect(ctx, 20, L.y, W - 40, L.h, 14); ctx.clip();
+    ctx.fillStyle = L.color; ctx.globalAlpha = 0.85;
+    ctx.fillRect(20, L.y, 4, L.h);
+    ctx.restore();
+
+    const cy = L.y + L.h / 2;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = L.color;
+    ctx.font = '700 14px "Microsoft YaHei",sans-serif';
+    ctx.fillText(L.name, 36, cy - 12);
+    ctx.fillStyle = 'rgba(229,238,252,0.36)';
+    ctx.font = '9px "Cascadia Code",Consolas,monospace';
+    ctx.fillText(L.en, 36, cy + 4);
+    ctx.fillStyle = 'rgba(155,176,201,0.75)';
+    ctx.font = '11px "Microsoft YaHei",sans-serif';
+    ctx.fillText(L.sub, 36, cy + 22);
+  });
+}
+
+function linkState(l) {
+  const inChain = chain === 'all' || l.chains.indexOf(chain) >= 0;
+  const focused = selectedId && (l.from === selectedId || l.to === selectedId);
+  let alpha;
+  if (!inChain) alpha = 0.05;
+  else if (selectedId) alpha = focused ? 0.95 : 0.08;
+  else if (chain !== 'all') alpha = 0.72;
+  else alpha = (hoverId && (l.from === hoverId || l.to === hoverId)) ? 0.85 : 0.32;
+  return { inChain: inChain, focused: focused, alpha: alpha };
+}
+
+function drawLinks() {
+  LINKS.forEach(l => {
+    const st = linkState(l);
+    const ty = TYPE[l.type];
+    const p = l.path;
+    ctx.save();
+    ctx.globalAlpha = st.alpha;
+    ctx.strokeStyle = ty.color;
+    ctx.lineWidth = st.focused || st.alpha > 0.7 ? 1.6 : 1.1;
+    ctx.setLineDash(ty.dash);
+    ctx.beginPath();
+    ctx.moveTo(p.p0.x, p.p0.y);
+    ctx.bezierCurveTo(p.c1.x, p.c1.y, p.c2.x, p.c2.y, p.p1.x, p.p1.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 箭头
+    const a = bezier(p, 0.93), b = bezier(p, 0.985);
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    ctx.translate(b.x, b.y); ctx.rotate(ang);
+    ctx.fillStyle = ty.color;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, -3.4); ctx.lineTo(-7, 3.4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 流动的数据包
+    if (st.inChain && (chain !== 'all' || st.alpha > 0.25)) {
+      const dots = st.focused || chain !== 'all' ? 3 : 2;
+      for (let k = 0; k < dots; k++) {
+        const u = (t * 0.24 + l.phase + k / dots) % 1;
+        const q = bezier(p, u);
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, st.alpha + 0.25);
+        ctx.shadowBlur = 10; ctx.shadowColor = ty.color;
+        ctx.fillStyle = ty.color;
+        ctx.beginPath(); ctx.arc(q.x, q.y, st.focused ? 3.2 : 2.4, 0, 6.2832); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 连线标签
+    if (showLabel && l.label && st.inChain && st.alpha > 0.25) {
+      const q = bezier(p, 0.5);
+      ctx.save();
+      ctx.font = '9px "Microsoft YaHei",sans-serif';
+      const tw = ctx.measureText(l.label).width;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = 'rgba(5,11,22,0.9)';
+      roundRect(ctx, q.x - tw / 2 - 5, q.y - 9, tw + 10, 15, 5); ctx.fill();
+      ctx.fillStyle = ty.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(l.label, q.x, q.y + 2);
+      ctx.restore();
+    }
+  });
+}
+
+function drawNodes() {
+  NODES.forEach(n => {
+    const hot = n.id === hoverId || n.id === selectedId;
+    const dim = (selectedId && !hot && !LINKS.some(l =>
+      (l.from === selectedId && l.to === n.id) || (l.to === selectedId && l.from === n.id)));
+    ctx.save();
+    ctx.globalAlpha = dim ? 0.5 : 1;
+    if (hot) { ctx.shadowBlur = 22; ctx.shadowColor = n.color; }
+
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    const g = ctx.createLinearGradient(n.x, n.y, n.x, n.y + n.h);
+    g.addColorStop(0, 'rgba(30,42,66,0.96)'); g.addColorStop(1, 'rgba(12,20,36,0.96)');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = hot ? n.color : 'rgba(255,255,255,0.13)';
+    ctx.lineWidth = hot ? 1.8 : 1;
+    ctx.stroke();
+
+    // 顶部色条
+    ctx.save();
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10); ctx.clip();
+    ctx.fillStyle = n.color; ctx.globalAlpha = hot ? 0.95 : 0.7;
+    ctx.fillRect(n.x, n.y, n.w, 3);
+    ctx.restore();
+
+    ctx.beginPath(); ctx.arc(n.x + n.w - 14, n.y + 15, 3, 0, 6.2832);
+    ctx.fillStyle = n.color; ctx.globalAlpha = 0.85; ctx.fill();
+    ctx.globalAlpha = dim ? 0.5 : 1;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#e5eefc';
+    ctx.font = '700 13px "Microsoft YaHei",sans-serif';
+    ctx.fillText(n.title, n.x + 11, n.y + 28, n.w - 30);
+    ctx.fillStyle = 'rgba(155,176,201,0.85)';
+    ctx.font = '10.5px "Microsoft YaHei",sans-serif';
+    ctx.fillText(n.sub, n.x + 11, n.y + 46, n.w - 22);
+    ctx.restore();
+  });
+}
+
+function drawTooltip() {
+  if (!hoverId || hoverId === selectedId) return;
+  const n = NODE[hoverId];
+  const txt = n.title + ' · 点击查看';
+  ctx.save();
+  ctx.font = '11px "Microsoft YaHei",sans-serif';
+  const tw = ctx.measureText(txt).width;
+  let x = n.x + n.w / 2 - tw / 2 - 10, y = n.y - 30;
+  if (x < 8) x = 8;
+  if (x + tw + 20 > W) x = W - tw - 28;
+  if (y < 44) y = n.y + n.h + 8;
+  roundRect(ctx, x, y, tw + 20, 24, 7);
+  ctx.fillStyle = 'rgba(2,6,23,0.95)'; ctx.fill();
+  ctx.strokeStyle = n.color; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#e5eefc'; ctx.textAlign = 'left';
+  ctx.fillText(txt, x + 10, y + 16);
+  ctx.restore();
+}
+
+function draw() {
+  drawBg();
+  drawLayers();
+  drawLinks();
+  drawNodes();
+  drawTooltip();
+}
+
+function loop(ts) {
+  if (!lastTs) lastTs = ts;
+  const delta = Math.min(60, ts - lastTs); lastTs = ts;
+  if (!paused) t += delta / 1000;
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 交互 ---------- */
+function hit(e) {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (W / r.width);
+  const y = (e.clientY - r.top) * (H / r.height);
+  return NODES.find(n => x >= n.x && x <= n.x + n.w && y >= n.y && y <= n.y + n.h) || null;
+}
+cv.addEventListener('mousemove', e => {
+  const n = hit(e);
+  const id = n ? n.id : null;
+  if (id !== hoverId) { hoverId = id; cv.style.cursor = id ? 'pointer' : 'default'; }
+});
+cv.addEventListener('mouseleave', () => { hoverId = null; cv.style.cursor = 'default'; });
+cv.addEventListener('click', e => {
+  const n = hit(e);
+  selectedId = n ? n.id : null;
+  renderNodeDetail();
+});
+
+function renderNodeDetail() {
+  const box = $('nodeBody');
+  if (!selectedId) {
+    box.innerHTML = '<div class="desc">尚未选中节点。在上方画布中<b style="color:var(--cyan)">点击任意卡片</b>，即可查看它的职责、技术选型以及上下游依赖；其余节点会自动淡出，方便看清连接关系。</div>' +
+      '<div class="kv"><span>分层数</span><b>6 层</b><span>节点数</span><b>' + NODES.length + ' 个</b><span>依赖连线</span><b>' + LINKS.length + ' 条</b><span>交互</span><b>悬停高亮 / 点击聚焦</b></div>';
+    return;
+  }
+  const n = NODE[selectedId];
+  const up = LINKS.filter(l => l.to === n.id).map(l => NODE[l.from].title);
+  const down = LINKS.filter(l => l.from === n.id).map(l => NODE[l.to].title);
+  const uniq = a => Array.from(new Set(a));
+  box.innerHTML =
+    '<div class="node-head"><span class="nm">' + n.title + '</span>' +
+      '<span class="badge" style="color:' + n.color + ';border-color:' + n.color + '55;background:' + n.color + '18">' + n.layerName + '</span></div>' +
+    '<p class="desc">' + n.desc + '</p>' +
+    '<div class="tags">' + n.tech.map(x => '<span class="tag">' + x + '</span>').join('') + '</div>' +
+    '<div class="kv"><span>定位</span><b>' + n.sub + '</b>' +
+      '<span>上游</span><b>' + (uniq(up).join('、') || '—') + '</b>' +
+      '<span>下游</span><b>' + (uniq(down).join('、') || '—') + '</b></div>';
+}
+
+function renderChain() {
+  const info = CHAIN_INFO[chain];
+  $('chainName').textContent = info.name;
+  $('chainSteps').innerHTML = info.steps.map(s => '<li>' + s + '</li>').join('');
+  $('stChain').textContent = chain === 'all' ? '全部链路' : info.name;
+}
+
+function renderTable() {
+  $('layerBody').innerHTML = LAYERS.map(L =>
+    '<tr><td><span class="lyr"><i style="background:' + L.color + '"></i>' + L.name + '</span></td>' +
+    '<td>' + L.duty + '</td><td class="mono">' + L.tech + '</td>' +
+    '<td>' + NODES.filter(n => n.layer === L.id).length + ' 个</td></tr>').join('');
+}
+
+/* ---------- 控件 ---------- */
+$('chainSel').onchange = e => { chain = e.target.value; selectedId = null; renderNodeDetail(); renderChain(); };
+$('playBtn').onclick = () => { paused = !paused; $('playBtn').textContent = paused ? '▶ 继续流动' : '⏸ 暂停流动'; };
+$('clearBtn').onclick = () => { selectedId = null; chain = 'all'; $('chainSel').value = 'all'; renderNodeDetail(); renderChain(); };
+$('saveBtn').onclick = () => {
+  const a = document.createElement('a');
+  a.download = '18-2-电商系统架构图.png';
+  a.href = cv.toDataURL('image/png');
+  a.click();
+};
+$('gridChk').onchange = e => { showGrid = e.target.checked; };
+$('labelChk').onchange = e => { showLabel = e.target.checked; };
+
+/* ---------- 初始化 ---------- */
+function initCanvas() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+initCanvas();
+layout();
+$('stLayers').textContent = LAYERS.length;
+$('stNodes').textContent = NODES.length;
+$('stLinks').textContent = LINKS.length;
+renderNodeDetail();
+renderChain();
+renderTable();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

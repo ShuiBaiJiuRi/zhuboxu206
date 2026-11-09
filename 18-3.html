@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-3 · 基于知识库的智能客服系统架构（科研版 · SVG）</title>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1300px, 100%);
+    background: rgba(10, 16, 28, 0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative; padding: 48px 48px 26px;
+    background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)), rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: .8; }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px; color: #08111d; font-family: var(--mono);
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.65rem, 2.5vw, 2.5rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 980px; color: var(--muted); line-height: 1.85; }
+  .hero .sub b { color: var(--cyan); }
+  .jumps { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .jump {
+    color: var(--cyan); text-decoration: none; font-size: 0.84rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .jump:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 34px 0 14px; }
+  .section-title h2 { margin: 0; font-size: 1.22rem; }
+  .section-title .line { flex: 1; height: 1px; background: var(--line); }
+  .section-title .pill { font-size: 0.75rem; color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.25); padding: 3px 10px; border-radius: 999px; }
+
+  /* ---------- 摘要信息 ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px;
+  }
+  .stat .num { display: block; font-family: var(--mono); font-size: 1.02rem; font-weight: 800; color: var(--cyan); }
+  .stat .label { color: var(--muted); font-size: 0.77rem; line-height: 1.55; }
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group > .lb { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 8px 14px; border-radius: 10px; font-size: 0.83rem; transition: all .18s;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 800; }
+  .chip {
+    cursor: pointer; border: 1px solid var(--line); color: var(--muted);
+    background: rgba(148, 163, 184, 0.06); padding: 6px 12px; border-radius: 999px;
+    font-size: 0.8rem; transition: all .18s;
+  }
+  .chip:hover { color: var(--text); border-color: rgba(103, 232, 249, 0.35); }
+  .chip.on { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); border-color: transparent; font-weight: 700; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--cyan); }
+  .tip-inline { margin-left: auto; font-size: 0.77rem; color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin: 0 0 12px 4px; }
+  .legend .item { display: flex; align-items: center; gap: 8px; font-size: 0.77rem; color: var(--muted); }
+  .legend .sw { width: 12px; height: 12px; border-radius: 4px; border: 1px solid; }
+  .legend .stroke { width: 34px; height: 0; border-top: 2px solid; }
+  .legend .stroke.dash { border-top-style: dashed; }
+
+  /* ---------- 图 ---------- */
+  .fig {
+    border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+    background: #050b16; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 40px rgba(2, 6, 23, 0.4);
+  }
+  .svg-scroll { overflow-x: auto; }
+  #archSvg { display: block; width: 100%; min-width: 1020px; height: auto; }
+  .fig-caption {
+    padding: 12px 18px 14px; border-top: 1px solid var(--line);
+    background: rgba(8, 14, 26, 0.65);
+    font-size: 0.82rem; color: var(--muted); line-height: 1.75;
+  }
+  .fig-caption b { color: var(--cyan); font-weight: 700; }
+
+  /* ---------- 详情区 ---------- */
+  .detail-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .panel h3 { margin: 0 0 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .panel h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .node-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .node-head .nm { font-size: 1.12rem; font-weight: 800; }
+  .badge { font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; border: 1px solid; }
+  .panel .desc { color: var(--muted); font-size: 0.85rem; line-height: 1.8; margin: 0 0 12px; }
+  .kv { display: grid; grid-template-columns: 82px 1fr; gap: 9px; font-size: 0.83rem; color: var(--muted); line-height: 1.75; }
+  .kv b { color: var(--text); font-weight: 600; }
+  .kv .hl { color: var(--amber); }
+  ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding: 8px 0 8px 34px;
+    font-size: 0.83rem; color: var(--muted); line-height: 1.75;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 9px;
+    width: 22px; height: 22px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 800; color: #08111d;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+  }
+  ol.steps li b { color: var(--text); }
+
+  /* ---------- 科研正文 ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card .no {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px;
+    border-radius: 8px; font-family: var(--mono); font-size: 0.74rem; font-weight: 800;
+    color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); margin-bottom: 10px; padding: 0 6px;
+  }
+  .card h4 { margin: 0 0 8px; font-size: 0.96rem; color: var(--text); }
+  .card p { margin: 0; color: var(--muted); font-size: 0.83rem; line-height: 1.78; }
+  .card code, .panel code, td code { font-family: var(--mono); color: var(--amber); font-size: 0.81rem; }
+  .callout {
+    margin-top: 14px; padding: 14px 16px; border-radius: 14px;
+    background: linear-gradient(120deg, rgba(103, 232, 249, 0.09), rgba(167, 139, 250, 0.07));
+    border: 1px solid rgba(103, 232, 249, 0.24); color: var(--muted); font-size: 0.85rem; line-height: 1.85;
+  }
+  .callout b { color: var(--cyan); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 720px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 0.83rem; line-height: 1.65; vertical-align: top; }
+  th { color: var(--cyan); font-size: 0.78rem; white-space: nowrap; }
+  tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+  td:first-child { color: var(--text); font-weight: 600; }
+  td.mono { font-family: var(--mono); color: var(--amber); white-space: nowrap; }
+
+  .formula {
+    margin-top: 14px; padding: 14px 16px; border-radius: 14px; overflow-x: auto;
+    background: rgba(2, 6, 23, 0.6); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.82rem; line-height: 2; color: #cfe3ff;
+    white-space: pre;
+  }
+  .formula .k { color: var(--cyan); }
+  .formula .c { color: #5c6b82; }
+  sub { font-size: 0.72em; }
+
+  .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stage {
+    position: relative; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px 14px;
+  }
+  .stage .ph { font-family: var(--mono); font-size: 0.72rem; color: var(--cyan); margin-bottom: 8px; }
+  .stage h4 { margin: 0 0 8px; font-size: 0.92rem; }
+  .stage p { margin: 0; color: var(--muted); font-size: 0.8rem; line-height: 1.72; }
+  .stage::after {
+    content: "→"; position: absolute; right: -13px; top: 50%; transform: translateY(-50%);
+    color: var(--cyan); font-size: 1rem; z-index: 2;
+  }
+  .stage:last-child::after { display: none; }
+
+  ol.refs { margin: 0; padding-left: 26px; }
+  ol.refs li {
+    color: var(--muted); font-size: 0.82rem; line-height: 1.85; padding: 5px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+  }
+  ol.refs li:last-child { border-bottom: none; }
+  ol.refs li::marker { color: var(--cyan); font-family: var(--mono); }
+  ol.refs em { color: var(--amber); font-style: normal; }
+
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 980px) {
+    .detail-grid, .stats, .timeline { grid-template-columns: 1fr 1fr; }
+    .stage::after { display: none; }
+    .tip-inline { margin-left: 0; }
+  }
+  @media (max-width: 620px) {
+    .hero, .content { padding-left: 18px; padding-right: 18px; }
+    .detail-grid, .stats, .timeline { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">SVG</div>
+      <div><h1>基于知识库的智能客服系统架构</h1></div>
+    </div>
+    <p class="sub">
+      面向<b>学位论文 / 课题申报</b>的系统总体架构图，采用 <b>SVG 矢量</b>绘制（可无损缩放、可导出、可检索文本）。
+      架构划分为<b>在线推理链路、离线知识构建链路、评估与持续学习闭环</b>三个域，共 7 层 35 个模块；
+      虚线框标出本研究的核心创新区。点击任意模块可查看其<b>功能、采用方法与研究难点</b>。
+    </p>
+    <div class="jumps">
+      <a class="jump" href="18-2.html">← 18-2 Canvas 电商架构图</a>
+      <a class="jump" href="18-1.html">18-1 Canvas 动画</a>
+      <a class="jump" href="#sec1">跳到研究背景 ↓</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="stats">
+      <div class="stat"><span class="num">RAG + LLM</span><span class="label">技术范式：检索增强生成</span></div>
+      <div class="stat"><span class="num">7 / 35</span><span class="label">架构层次 / 功能模块</span></div>
+      <div class="stat"><span class="num">3 域协同</span><span class="label">在线 / 离线 / 评估闭环</span></div>
+      <div class="stat"><span class="num">SVG · 矢量</span><span class="label">图件格式：原生 SVG 元素</span></div>
+    </div>
+
+    <div class="section-title"><h2>图 1 · 系统总体架构</h2><span class="pill">SVG VECTOR FIGURE</span><span class="line"></span></div>
+
+    <div class="toolbar">
+      <div class="group" id="viewGroup"><span class="lb">视图</span></div>
+      <div class="group">
+        <button class="btn primary" id="animBtn">⏸ 暂停流动</button>
+        <button class="btn" id="resetBtn">重置视图</button>
+        <button class="btn" id="exportBtn">导出 SVG</button>
+      </div>
+      <div class="group"><label class="check"><input type="checkbox" id="coreChk" checked>标出核心创新区</label></div>
+      <span class="tip-inline">提示：点击模块查看研究内容，悬停高亮</span>
+    </div>
+
+    <div class="legend">
+      <span class="item"><i class="sw" style="background:rgba(103,232,249,.15);border-color:#67e8f9"></i>在线推理域 L1–L4</span>
+      <span class="item"><i class="sw" style="background:rgba(52,211,153,.15);border-color:#34d399"></i>离线知识构建域 L5–L6</span>
+      <span class="item"><i class="sw" style="background:rgba(251,113,133,.15);border-color:#fb7185"></i>评估闭环域 L7</span>
+      <span class="item"><i class="stroke" style="border-color:#67e8f9"></i>主数据流</span>
+      <span class="item"><i class="stroke dash" style="border-color:#f9a8d4"></i>反馈 / 知识供给回路</span>
+    </div>
+
+    <figure class="fig" style="margin:0">
+      <div class="svg-scroll">
+        <svg id="archSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 910" role="img"
+             aria-label="基于知识库的智能客服系统七层架构图">
+          <defs>
+            <linearGradient id="gBase" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1b2942"/><stop offset="1" stop-color="#0c1628"/>
+            </linearGradient>
+            <linearGradient id="gCore" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2a2145"/><stop offset="1" stop-color="#120f2a"/>
+            </linearGradient>
+            <filter id="fGlow" x="-40%" y="-60%" width="180%" height="220%">
+              <feGaussianBlur stdDeviation="3.5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="arCyan" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+              <path d="M0,0 L6.5,3 L0,6 Z" fill="#67e8f9"/></marker>
+            <marker id="arGreen" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+              <path d="M0,0 L6.5,3 L0,6 Z" fill="#34d399"/></marker>
+            <marker id="arPink" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+              <path d="M0,0 L6.5,3 L0,6 Z" fill="#f9a8d4"/></marker>
+            <marker id="arBlue" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+              <path d="M0,0 L6.5,3 L0,6 Z" fill="#60a5fa"/></marker>
+            <style>
+              .bg { fill: #060d1b; }
+              .grid { stroke: #7f9bbd; stroke-opacity: .055; stroke-width: 1; }
+              .hdr { fill: #e5eefc; font: 700 16px "Microsoft YaHei",sans-serif; }
+              .hdrEn { fill: #7f97b4; font: 10px "Cascadia Code",Consolas,monospace; }
+              .hdrR { fill: #7f97b4; font: 9px "Cascadia Code",Consolas,monospace; }
+              .rule { stroke: #ffffff; stroke-opacity: .1; }
+              .band { fill: #ffffff; fill-opacity: .016; stroke: #ffffff; stroke-opacity: .07; stroke-width: 1; }
+              .labBg { fill: #070f1d; }
+              .labNo { font: 800 11px "Cascadia Code",Consolas,monospace; }
+              .labName { fill: #e5eefc; font: 700 13.5px "Microsoft YaHei",sans-serif; }
+              .labEn { fill: #7f97b4; font: 8.5px "Cascadia Code",Consolas,monospace; }
+              .labTag { font: 10px "Microsoft YaHei",sans-serif; }
+              .node { cursor: pointer; }
+              .node .box { fill: url(#gBase); stroke: #ffffff; stroke-opacity: .14; stroke-width: 1; }
+              .node.core .box { fill: url(#gCore); }
+              .node:hover .box, .node.sel .box { stroke: #67e8f9; stroke-opacity: 1; stroke-width: 1.8; filter: url(#fGlow); }
+              .node .t { fill: #e5eefc; font: 700 12.5px "Microsoft YaHei",sans-serif; }
+              .node .s { fill: #8ea7c2; font: 10px "Microsoft YaHei",sans-serif; }
+              .node .star { fill: #fbbf24; font: 700 11px "Microsoft YaHei",sans-serif; }
+              .edge { fill: none; stroke-width: 1.2; stroke-opacity: .42; }
+              .gapLab { fill: #7f97b4; font: 9.5px "Microsoft YaHei",sans-serif; }
+              .route { fill: none; stroke-width: 2; stroke-opacity: .85; }
+              .routeLbl { font: 9.5px "Microsoft YaHei",sans-serif; letter-spacing: 1px; }
+              .focusBox { fill: none; stroke: #a78bfa; stroke-opacity: .65; stroke-width: 1.4; stroke-dasharray: 7 6; }
+              .focusLbl { fill: #a78bfa; font: 700 10.5px "Microsoft YaHei",sans-serif; }
+              .pkt { filter: url(#fGlow); }
+              .lgTxt { fill: #8ea7c2; font: 10px "Microsoft YaHei",sans-serif; }
+              [data-view] { transition: opacity .35s ease; }
+              .dim { opacity: .13; }
+              .no-anim .pkt { display: none; }
+              .hidden { display: none; }
+            </style>
+          </defs>
+          <g id="svgRoot"></g>
+        </svg>
+      </div>
+      <figcaption class="fig-caption">
+        <b>图 1</b>　基于知识库的智能客服系统总体架构。自顶向下为在线推理链路（L1–L4）与离线知识构建链路（L5–L6），
+        底层为评估与持续学习闭环（L7）。实线为主数据流，虚线回路表示知识索引供给、回答返回与评估反馈；
+        紫色虚线框为<b>本研究核心创新区</b>——领域自适应混合检索、证据约束生成与可溯源幻觉抑制。
+        图中所有元素均为原生 SVG 图元（<code>rect</code> / <code>path</code> / <code>text</code> / <code>animateMotion</code>），可无损缩放与二次编辑。
+      </figcaption>
+    </figure>
+
+    <div class="detail-grid" style="margin-top:16px">
+      <section class="panel" id="nodePanel">
+        <h3><span class="dot"></span>模块研究说明</h3>
+        <div id="nodeBody"></div>
+      </section>
+      <section class="panel">
+        <h3><span class="dot"></span>当前视图导读</h3>
+        <div id="viewName" style="font-size:0.9rem;font-weight:700;margin-bottom:8px"></div>
+        <ol class="steps" id="viewSteps"></ol>
+      </section>
+    </div>
+
+    <!-- ========== 1 研究背景 ========== -->
+    <div class="section-title" id="sec1"><h2>1　研究背景与科学问题</h2><span class="pill">RESEARCH BACKGROUND</span><span class="line"></span></div>
+    <div class="cards">
+      <div class="card"><span class="no">P1</span><h4>知识孤岛与时效性</h4><p>企业知识分散在 FAQ、工单、产品手册、政策文件中，格式异构、版本频繁更新。纯参数化 LLM 无法低成本同步最新知识，导致回答过时或越权引用。</p></div>
+      <div class="card"><span class="no">P2</span><h4>生成幻觉与可信性</h4><p>通用大模型在领域问答中易生成无依据陈述。客服场景要求回答<b>可溯源、可审计</b>，需要在证据层面而非仅凭模型自觉来抑制幻觉。</p></div>
+      <div class="card"><span class="no">P3</span><h4>多轮意图漂移与检索退化</h4><p>用户表述常含省略、指代与口语化表达，直接以原始问句检索会显著降低召回；长会话中上下文膨胀又带来噪声与位置偏差。</p></div>
+    </div>
+    <div class="callout">
+      <b>科学问题凝练：</b>
+      ① 如何构建领域自适应的<b>检索—生成联合优化</b>机制，使稀疏、稠密与图检索的融合权重随查询类型动态变化？
+      ② 如何以<b>证据约束与陈述级归因</b>实现可验证的幻觉抑制，并在效果与首字延迟之间取得帕累托最优？
+      ③ 如何以<b>用户反馈驱动的数据飞轮</b>实现知识库与检索模型的持续进化，同时避免灾难性遗忘与知识冲突？
+    </div>
+
+    <!-- ========== 2 研究目标与技术路线 ========== -->
+    <div class="section-title"><h2>2　研究目标与技术路线</h2><span class="pill">OBJECTIVES & ROADMAP</span><span class="line"></span></div>
+    <section class="panel" style="margin-bottom:14px">
+      <h3><span class="dot"></span>研究目标</h3>
+      <ol class="steps">
+        <li><b>目标一：</b>构建面向客服领域的可增量更新知识库，形成规范化的数据采集、解析、分块与索引流程。</li>
+        <li><b>目标二：</b>提出领域自适应混合检索与证据约束生成方法，显著提升答案事实一致性与引用可溯源性。</li>
+        <li><b>目标三：</b>实现原型系统并在真实脱敏客服语料与公开基准上完成对比实验、消融实验与在线 A/B 验证。</li>
+      </ol>
+    </section>
+    <div class="timeline">
+      <div class="stage"><div class="ph">PHASE 01</div><h4>调研与问题定义</h4><p>文献综述、业务语料分析、标注规范制定，构建领域评测集与基线系统。</p></div>
+      <div class="stage"><div class="ph">PHASE 02</div><h4>知识库构建</h4><p>多源解析、自适应语义分块、领域 Embedding 微调、混合索引与版本管理。</p></div>
+      <div class="stage"><div class="ph">PHASE 03</div><h4>检索—生成联合优化</h4><p>动态融合权重、Cross-Encoder 精排、证据约束解码、归因校验与幻觉抑制。</p></div>
+      <div class="stage"><div class="ph">PHASE 04</div><h4>系统实现与评测</h4><p>原型系统落地，离线指标 + 人工评估 + 在线 A/B，完成消融与可复现实验。</p></div>
+    </div>
+
+    <!-- ========== 3 关键技术与方法 ========== -->
+    <div class="section-title"><h2>3　关键技术与方法</h2><span class="pill">METHODOLOGY</span><span class="line"></span></div>
+    <section class="panel table-wrap">
+      <table>
+        <thead><tr><th>模块</th><th>核心方法</th><th>关键技术</th><th>研究难点</th></tr></thead>
+        <tbody>
+          <tr><td>知识预处理</td><td>版面感知的自适应语义分块</td><td><code>PDF/OCR 解析 · 标题树 · 语义边界检测</code></td><td>复杂表格与跨页段落的语义完整性；分块粒度对端到端指标的影响</td></tr>
+          <tr><td>稠密检索</td><td>领域对比学习微调 Embedding</td><td><code>BGE / DPR · 难负样本挖掘 · HNSW</code></td><td>领域偏移下的语义表征；长尾术语与别名覆盖</td></tr>
+          <tr><td>混合检索</td><td>门控网络动态融合 + RRF</td><td><code>BM25F · ANN · Reciprocal Rank Fusion</code></td><td>按查询类型自适应分配通道权重，替代固定超参</td></tr>
+          <tr><td>重排序</td><td>Cross-Encoder 精排与蒸馏</td><td><code>交互式打分 · 知识蒸馏 · Top-K 截断</code></td><td>精排收益与首字延迟（P95）的帕累托优化</td></tr>
+          <tr><td>上下文门控</td><td>证据充分性判别与自反思检索</td><td><code>置信度阈值 · 迭代检索 · 去冗余压缩</code></td><td>拒答边界；Lost-in-the-Middle 位置偏差</td></tr>
+          <tr><td>受控生成</td><td>结构化证据 Prompt + 约束解码</td><td><code>LoRA 微调 · vLLM · 引用标记约束</code></td><td>领域适配成本、吞吐与时延联合优化</td></tr>
+          <tr><td>可信保障</td><td>陈述级归因 + NLI 自洽校验</td><td><code>证据对齐 · Self-Consistency · 二次生成</code></td><td>细粒度自动归因；证据冲突消解</td></tr>
+          <tr><td>持续学习</td><td>难例驱动的增量更新闭环</td><td><code>主动学习 · 增量索引 · 回归测试</code></td><td>灾难性遗忘与知识版本冲突</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ========== 4 实验设计 ========== -->
+    <div class="section-title"><h2>4　实验设计与评价指标</h2><span class="pill">EXPERIMENTS</span><span class="line"></span></div>
+    <div class="cards" style="margin-bottom:14px">
+      <div class="card"><span class="no">D1</span><h4>领域数据集</h4><p>脱敏客服会话、历史工单、产品手册与政策文件；人工标注「问题—标准答案—证据片段—多轮上下文」四元组，双人标注并以 Cohen's κ 检验一致性。</p></div>
+      <div class="card"><span class="no">D2</span><h4>公开基准</h4><p><code>MS MARCO Passage Ranking</code> 验证检索模块可比性，<code>HotpotQA</code> 验证多跳推理能力；统一切分与评测脚本保证可复现。</p></div>
+      <div class="card"><span class="no">D3</span><h4>基线系统</h4><p>BM25 / DPR / Vanilla LLM / RAG(BM25+LLM) / RAG(DPR+LLM) / RAG+Cross-Encoder，与本文方法在相同算力与 Prompt 下对比。</p></div>
+    </div>
+
+    <section class="panel table-wrap">
+      <h3><span class="dot"></span>评价指标体系</h3>
+      <table>
+        <thead><tr><th>维度</th><th>指标</th><th>含义 / 侧重点</th></tr></thead>
+        <tbody>
+          <tr><td>检索质量</td><td class="mono">Recall@K · MRR@10 · nDCG@10</td><td>证据片段的召回覆盖、首个正确结果排名与整体排序质量</td></tr>
+          <tr><td>生成质量</td><td class="mono">ROUGE-L · BERTScore</td><td>与参考答案的字面重叠与语义相似度</td></tr>
+          <tr><td>事实一致性</td><td class="mono">Faithfulness · Citation Precision/Recall</td><td>回答陈述被检索证据支撑的比例，以及引用归因的准确性</td></tr>
+          <tr><td>答案质量</td><td class="mono">Answer Relevance · 人工 1–5 分</td><td>切题度、有用性、流畅度（Likert 量表，双人评分取均值）</td></tr>
+          <tr><td>系统性能</td><td class="mono">P50 / P95 首字延迟 · QPS · 拒答率</td><td>工程可用性与体验约束，作为效果优化的边界条件</td></tr>
+        </tbody>
+      </table>
+      <div class="formula"><span class="c">// 检索指标</span>
+<span class="k">Recall@K</span> = |R<sub>K</sub> ∩ R*| / |R*|　　　<span class="k">MRR</span> = (1/|Q|) · Σ<sub>i</sub> 1 / rank<sub>i</sub>
+<span class="k">nDCG@K</span> = DCG@K / IDCG@K,　DCG@K = Σ<sub>j=1..K</sub> (2<sup>rel<sub>j</sub></sup> − 1) / log<sub>2</sub>(j + 1)
+
+<span class="c">// 事实一致性（陈述级）</span>
+<span class="k">Faithfulness</span> = |{ s ∈ S : evidence(s) ⊆ C }| / |S|
+　　S = 生成回答拆分出的陈述集合，C = 检索返回的证据集合
+
+<span class="c">// 联合优化目标</span>
+<span class="k">J</span> = α · Faithfulness + β · AnswerRelevance + γ · nDCG@10 − λ · Latency<sub>P95</sub>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:14px">
+      <h3><span class="dot"></span>消融实验设计</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>变体</th><th>移除组件</th><th>验证假设</th></tr></thead>
+          <tbody>
+            <tr><td>M1</td><td>w/o Query 改写</td><td>上下文消歧对多轮检索召回的贡献</td></tr>
+            <tr><td>M2</td><td>w/o BM25 稀疏通道</td><td>字面精确匹配对型号/编号类查询的必要性</td></tr>
+            <tr><td>M3</td><td>w/o 动态融合门控（固定 RRF 权重）</td><td>通道权重自适应是否优于固定超参</td></tr>
+            <tr><td>M4</td><td>w/o Cross-Encoder 重排</td><td>精排对 Faithfulness 与延迟的权衡</td></tr>
+            <tr><td>M5</td><td>w/o 置信度门控与拒答</td><td>低置信拦截对幻觉率的影响</td></tr>
+            <tr><td>M6</td><td>w/o 归因与自洽校验</td><td>陈述级证据校验对可溯源性的贡献</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== 5 创新点 ========== -->
+    <div class="section-title"><h2>5　主要创新点</h2><span class="pill">CONTRIBUTIONS</span><span class="line"></span></div>
+    <div class="cards">
+      <div class="card"><span class="no">C1</span><h4>领域自适应混合检索</h4><p>以查询类型门控网络动态预测稀疏 / 稠密 / 图检索通道权重，配合难负样本对比学习微调，缓解领域偏移与长尾术语召回不足。</p></div>
+      <div class="card"><span class="no">C2</span><h4>证据约束生成与可溯源幻觉抑制</h4><p>结构化证据模板 + 引用标记约束解码，生成后做陈述级归因与 NLI 自洽校验，触发按需重检索与二次生成，形成可审计的证据链。</p></div>
+      <div class="card"><span class="no">C3</span><h4>反馈驱动的知识自进化闭环</h4><p>以显式反馈与转人工等隐式信号挖掘难例，结合主动学习与增量索引、周期性 LoRA 微调及回归测试，实现知识库与模型协同演进。</p></div>
+    </div>
+
+    <!-- ========== 6 预期成果 ========== -->
+    <div class="section-title"><h2>6　预期成果</h2><span class="pill">EXPECTED OUTPUT</span><span class="line"></span></div>
+    <section class="panel">
+      <ol class="steps">
+        <li>一套面向客服领域的<b>知识库构建规范与领域评测集</b>（含证据标注与多轮会话）。</li>
+        <li>一种<b>检索—生成联合优化方法</b>，在 Faithfulness 与 nDCG@10 上显著优于基线，同时满足 P95 延迟约束。</li>
+        <li>一个可运行的<b>智能客服原型系统</b>，支持多渠道接入、流式回答、引用溯源与人工兜底。</li>
+        <li>相关<b>学术论文 / 专利 / 实验报告</b>，以及可复现的评测脚本与消融实验结果。</li>
+      </ol>
+    </section>
+
+    <!-- ========== 7 参考文献 ========== -->
+    <div class="section-title"><h2>7　参考文献</h2><span class="pill">REFERENCES</span><span class="line"></span></div>
+    <section class="panel">
+      <ol class="refs">
+        <li>Lewis P, Perez E, Piktus A, et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks[C]//<em>Advances in Neural Information Processing Systems (NeurIPS)</em>, 2020: 9459-9474.</li>
+        <li>Karpukhin V, Oğuz B, Min S, et al. Dense Passage Retrieval for Open-Domain Question Answering[C]//<em>Proceedings of EMNLP</em>, 2020: 6769-6781.</li>
+        <li>Izacard G, Grave E. Leveraging Passage Retrieval with Generative Models for Open Domain Question Answering[C]//<em>Proceedings of EACL</em>, 2021: 874-880.</li>
+        <li>Robertson S E, Walker S. Some Simple Effective Approximations to the 2-Poisson Model for Probabilistic Weighted Retrieval[C]//<em>Proceedings of SIGIR</em>, 1994: 232-241.</li>
+        <li>Nogueira R, Cho K. Passage Re-ranking with BERT[J]. <em>arXiv preprint arXiv:1901.04085</em>, 2019.</li>
+        <li>Gao Y, Xiong Y, Gao X, et al. Retrieval-Augmented Generation for Large Language Models: A Survey[J]. <em>arXiv preprint arXiv:2312.10997</em>, 2023.</li>
+        <li>Hu E J, Shen Y, Wallis P, et al. LoRA: Low-Rank Adaptation of Large Language Models[C]//<em>International Conference on Learning Representations (ICLR)</em>, 2022.</li>
+        <li>Es S, James J, Espinosa-Anke L, et al. RAGAs: Automated Evaluation of Retrieval Augmented Generation[C]//<em>Proceedings of EACL: System Demonstrations</em>, 2024.</li>
+        <li>Zhang T, Kishore V, Wu F, et al. BERTScore: Evaluating Text Generation with BERT[C]//<em>International Conference on Learning Representations (ICLR)</em>, 2020.</li>
+        <li>Liu N F, Lin K, Hewitt J, et al. Lost in the Middle: How Language Models Use Long Contexts[J]. <em>Transactions of the ACL</em>, 2024, 12: 157-173.</li>
+        <li>Lin C Y. ROUGE: A Package for Automatic Evaluation of Summaries[C]//<em>ACL Workshop on Text Summarization Branches Out</em>, 2004: 74-81.</li>
+        <li>Nguyen T, Rosenberg M, Song X, et al. MS MARCO: A Human Generated MAchine Reading COmprehension Dataset[C]//<em>NeurIPS Datasets and Benchmarks</em>, 2016.</li>
+      </ol>
+    </section>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 18-3 基于知识库的智能客服系统架构（SVG 科研版）· 朱泊旭</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   18-3 基于知识库的智能客服系统架构图（原生 SVG 生成）
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const svg = $('archSvg');
+const root = $('svgRoot');
+function E(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent || root).appendChild(e);
+  return e;
+}
+function T(x, y, txt, cls, parent, extra) {
+  const e = E('text', Object.assign({ x: x, y: y, class: cls }, extra || {}), parent);
+  e.textContent = txt;
+  return e;
+}
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* ---------- 架构数据 ---------- */
+const LAYERS = [
+  { id: 'l1', no: '01', name: '用户交互层', en: 'INTERACTION', tag: '在线推理域', color: '#60a5fa', y: 64,  h: 92,  view: 'online' },
+  { id: 'l2', no: '02', name: '对话理解与编排', en: 'DIALOGUE ORCHESTRATION', tag: '在线推理域', color: '#67e8f9', y: 182, h: 92,  view: 'online' },
+  { id: 'l3', no: '03', name: '检索增强层 RAG', en: 'RETRIEVAL AUGMENTATION', tag: '在线 · 核心创新', color: '#a78bfa', y: 300, h: 100, view: 'online', core: true },
+  { id: 'l4', no: '04', name: '生成与可信保障', en: 'GROUNDED GENERATION', tag: '在线 · 核心创新', color: '#f9a8d4', y: 424, h: 100, view: 'online', core: true },
+  { id: 'l5', no: '05', name: '知识构建管线', en: 'KNOWLEDGE PIPELINE', tag: '离线构建域', color: '#34d399', y: 552, h: 100, view: 'offline' },
+  { id: 'l6', no: '06', name: '存储与索引层', en: 'STORAGE & INDEX', tag: '离线构建域', color: '#fbbf24', y: 674, h: 88,  view: 'offline' },
+  { id: 'l7', no: '07', name: '评估反馈与持续学习', en: 'EVALUATION & FEEDBACK', tag: '评估闭环域', color: '#fb7185', y: 786, h: 96,  view: 'eval' }
+];
+
+const NODE_SETS = {
+  l1: [
+    { id: 'portal', t: '客服门户 Web / APP', s: '网页 · 移动端', d: '统一会话入口，承载文本、图片与文件上传，记录会话标识与渠道来源。' },
+    { id: 'im', t: '企业微信 / 小程序', s: '社交渠道接入', d: '通过渠道适配器把第三方消息协议规范化为内部统一对话事件。' },
+    { id: 'voice', t: '电话语音 ASR / TTS', s: '语音转写 · 合成', d: '语音流实时转写为文本，回答经 TTS 回放，并评估噪声与方言鲁棒性。' },
+    { id: 'openapi', t: '开放 API / SDK', s: '第三方系统集成', d: '提供同步与流式两种问答接口，含鉴权、配额与幂等控制。' },
+    { id: 'tenant', t: '多租户与权限', s: '租户隔离 · RBAC', d: '按租户隔离知识空间与会话数据，控制知识可见范围与调用权限。' }
+  ],
+  l2: [
+    { id: 'intent', t: '意图识别与槽位填充', s: '分类 · 序列标注', d: '识别咨询、投诉、办理等意图并抽取产品名、订单号等关键槽位。', m: '领域预训练模型 + 指令微调；低置信样本送人工复核。', k: '少样本新意图发现与类别不均衡下的鲁棒识别。' },
+    { id: 'dst', t: '多轮对话状态跟踪', s: 'DST · 上下文建模', d: '维护跨轮次的用户目标、已确认槽位与待澄清项，避免信息丢失。', m: '显式状态槽位跟踪 + 会话摘要压缩。', k: '长会话中的状态漂移与指代消解。' },
+    { id: 'rewrite', t: 'Query 改写与消歧', s: '指代消解 · 扩展', d: '把「它多少钱」补全省略信息，生成可独立检索的规范化查询。', m: '上下文感知改写模型 + 多查询扩展（Multi-Query）。', k: '改写保真度与检索召回的平衡，防止语义漂移。' },
+    { id: 'policy', t: '对话策略与澄清', s: '策略引擎 · 反问', d: '在信息不足或检索置信度低时发起澄清追问，或转人工坐席。', m: '规则与轻量策略网络结合，按期望收益决定澄清 / 直答 / 转人工。', k: '澄清代价建模与用户满意度权衡。' },
+    { id: 'memory', t: '会话记忆管理', s: '短期 / 长期记忆', d: '缓存近期对话、用户画像与历史工单，为个性化回答提供上下文。' }
+  ],
+  l3: [
+    { id: 'router', t: '混合检索调度', s: '融合 · 路由', d: '按查询类型动态选择稀疏、稠密或图检索通道并分配融合权重。', m: '门控网络预测通道权重 + RRF 倒数排名融合。', k: '领域自适应动态融合权重，替代固定超参。', star: true },
+    { id: 'sparse', t: 'BM25 稀疏检索', s: '倒排索引 · 关键词', d: '精确匹配产品型号、政策编号、错误码等字面敏感查询。', m: 'BM25F 字段加权 + 同义词词典扩展。', k: '专业术语、别名与缩写的覆盖度。' },
+    { id: 'dense', t: '稠密向量检索', s: 'Embedding · ANN', d: '捕捉语义相似性，召回字面不同但语义相关的知识片段。', m: '领域语料对比学习微调 Embedding；HNSW / IVF 近似最近邻。', k: '领域偏移下的语义表征与难负样本挖掘。', star: true },
+    { id: 'rerank', t: 'Cross-Encoder 重排', s: '精排 · 相关性', d: '对候选片段做查询—文档交互式打分，输出 Top-K 证据。', m: '交叉编码器精排 + 蒸馏到双塔以控制延迟。', k: '精排效果与首字延迟的帕累托优化。', star: true },
+    { id: 'gate', t: '上下文压缩与门控', s: '去冗余 · 置信度', d: '合并重复片段、按预算裁剪上下文，并据置信度决定直答、重检索或拒答。', m: '证据充分性判别 + 迭代「检索—验证」自反思循环。', k: '低置信样本拒答阈值与幻觉前置拦截。', star: true }
+  ],
+  l4: [
+    { id: 'prompt', t: 'Prompt 构造与模板', s: '证据注入 · 约束', d: '把系统指令、对话状态与带编号证据组装为受约束的生成输入。', m: '结构化证据模板 + 引用标记约束解码。', k: '证据位置偏差（Lost in the Middle）缓解。', star: true },
+    { id: 'llm', t: 'LLM 推理服务', s: 'vLLM · 量化部署', d: '提供流式生成，支持多模型路由、KV Cache 复用与批量推理。', m: 'LoRA 领域微调 + PagedAttention 推理加速。', k: '领域适配成本与吞吐、时延的联合优化。', star: true },
+    { id: 'cite', t: '引用溯源与证据对齐', s: '可解释 · 归因', d: '为回答中的事实标注证据编号与知识条目出处，支持一键回溯。', m: '生成后归因校验：陈述级证据匹配与相似度验证。', k: '细粒度自动归因与证据冲突消解。', star: true },
+    { id: 'halluc', t: '幻觉检测与自洽校验', s: '事实一致性', d: '检测未被证据支撑的陈述，触发重检索或改写后二次生成。', m: 'NLI 蕴含判别 + 多采样自洽性投票（Self-Consistency）。', k: '领域事实幻觉的低成本在线检测。', star: true },
+    { id: 'safety', t: '安全拒答与合规过滤', s: '风控 · 脱敏', d: '过滤敏感信息、越权内容与承诺性表述，兜底转人工并留审计日志。' }
+  ],
+  l5: [
+    { id: 'source', t: '多源语料接入', s: 'FAQ · 工单 · 手册', d: '汇聚产品手册、政策文件、历史工单与帮助中心等异构知识。' },
+    { id: 'parse', t: '文档解析与版面还原', s: 'PDF · 表格 · 图片', d: '解析版式、表格与图片文字，保留标题层级与章节路径作为元数据。', m: '版面分析 + OCR + 结构化重建。', k: '复杂表格与跨页段落的语义完整性。' },
+    { id: 'chunk', t: '语义分块 Chunking', s: '切分 · 重叠', d: '按语义边界与标题层级切分片段，控制粒度与重叠以兼顾召回与噪声。', m: '基于标题树与语义相似度的自适应分块。', k: '最优分块粒度对检索—生成端到端指标的影响。', star: true },
+    { id: 'embed', t: 'Embedding 与知识抽取', s: '向量化 · 三元组', d: '生成片段向量，抽取实体、关系与同义词，构建领域词表。', m: '对比学习领域微调 + 实体关系联合抽取。', k: '领域词表与同义关系的自动扩充。' },
+    { id: 'qa', t: 'QA 对与图谱构建', s: '数据增强 · 图谱', d: '由文档自动生成问答对与知识三元组，扩充长尾问题覆盖。', m: 'LLM 辅助合成 + 人工抽检去噪。', k: '合成数据噪声控制与分布偏移。' }
+  ],
+  l6: [
+    { id: 'vec', t: '向量库 Milvus / FAISS', s: 'ANN 索引', d: '存储片段向量与元数据，支持按租户、时效、品类过滤检索。' },
+    { id: 'inv', t: '倒排索引 ES', s: 'BM25 · 关键词', d: '提供字面检索、字段加权、高亮与短语匹配能力。' },
+    { id: 'rdb', t: '业务与会话库', s: 'PostgreSQL / Redis', d: '保存用户信息、工单、会话状态与缓存，保障事务一致性。' },
+    { id: 'graph', t: '知识图谱 Neo4j', s: '实体 · 关系', d: '支撑多跳推理、产品关联与上下位概念查询。' },
+    { id: 'ver', t: '知识版本与权限', s: '版本 · 审计', d: '记录知识条目的生效时间、版本与审核状态，支持回滚与灰度发布。' }
+  ],
+  l7: [
+    { id: 'dataset', t: '离线评测集与标注', s: 'Gold Set · 标注规范', d: '构建含标准答案、证据标注与多轮会话的领域评测集。', m: '双人独立标注 + Cohen κ 一致性检验。', k: '领域评测集构建规范与实验可复现性。' },
+    { id: 'metric', t: '检索 / 生成指标', s: '自动评测', d: '计算 Recall@K、MRR、nDCG 与 Faithfulness、Answer Relevance 等。', m: 'RAGAS 式无参考评估 + 人工抽样校准。', k: '自动指标与人工感知的相关性验证。', star: true },
+    { id: 'feedback', t: '用户反馈与难例挖掘', s: '点赞 / 转人工', d: '采集显式反馈与隐式信号（追问、转人工），定位检索失败与幻觉样本。', m: '失败样本聚类 + 主动学习优先标注。', k: '难例驱动的闭环数据飞轮。', star: true },
+    { id: 'ab', t: 'A/B 实验平台', s: '分流 · 显著性检验', d: '对检索策略、重排模型与 Prompt 版本做在线对照实验。', m: '分层分流 + 置信区间与显著性检验。', k: '小流量下的指标敏感性与实验周期设计。' },
+    { id: 'evolve', t: '知识库自进化', s: '增量更新 · 微调', d: '把审核通过的新知识增量入库，周期性微调检索 / 重排模型。', m: '增量索引 + 定时 LoRA 微调与回归测试。', k: '避免灾难性遗忘与知识冲突。', star: true }
+  ]
+};
+
+const GAP_LABELS = [
+  '用户 Query / 会话上下文',
+  '规范化 Query + 对话状态',
+  'Top-K 证据片段（含出处）',
+  '带引用的回答 → 用户',
+  '解析后文档 / 向量 / QA 对',
+  '混合索引与知识服务'
+];
+
+const NODE_BY_ID = {};
+LAYERS.forEach(L => NODE_SETS[L.id].forEach(n => { n.layer = L; NODE_BY_ID[n.id] = n; }));
+
+/* ---------- 布局常量 ---------- */
+const BX = 40, BW = 1196, AX = 200, AW = 1010, GAP = 12, NH = 56;
+const NW = (AW - GAP * 4) / 5;
+const colX = i => AX + i * (NW + GAP);
+const colC = i => colX(i) + NW / 2;
+
+/* ---------- 1. 背景与图头 ---------- */
+E('rect', { x: 0, y: 0, width: 1280, height: 910, class: 'bg' });
+const grid = E('g', { class: 'grid' });
+for (let x = 0; x <= 1280; x += 32) E('line', { x1: x, y1: 0, x2: x, y2: 910 }, grid);
+for (let y = 0; y <= 910; y += 32) E('line', { x1: 0, y1: y, x2: 1280, y2: y }, grid);
+T(40, 28, '基于知识库的智能客服系统 · 总体架构', 'hdr');
+T(40, 44, 'KNOWLEDGE-GROUNDED INTELLIGENT CUSTOMER SERVICE SYSTEM / RAG ARCHITECTURE', 'hdrEn');
+T(1236, 26, '图 1  FIGURE 1  ·  SVG VECTOR', 'hdrR', root, { 'text-anchor': 'end' });
+E('line', { x1: 40, y1: 52, x2: 1236, y2: 52, class: 'rule' });
+
+/* ---------- 2. 核心创新区虚线框 ---------- */
+const focusG = E('g', { 'data-view': 'online', id: 'focusGroup' });
+E('rect', { x: 192, y: 290, width: 1026, height: 242, rx: 14, class: 'focusBox' }, focusG);
+E('rect', { x: 202, y: 281, width: 226, height: 19, rx: 6, fill: '#120f2a', stroke: '#a78bfa', 'stroke-opacity': '.5' }, focusG);
+T(315, 294, '★ 本研究核心创新区  RESEARCH FOCUS', 'focusLbl', focusG, { 'text-anchor': 'middle' });
+
+/* ---------- 3. 层带 ---------- */
+LAYERS.forEach(L => {
+  const g = E('g', { 'data-view': L.view });
+  E('rect', { x: BX, y: L.y, width: BW, height: L.h, rx: 14, class: 'band' }, g);
+  E('rect', { x: BX, y: L.y, width: 4, height: L.h, rx: 2, fill: L.color, 'fill-opacity': '.85' }, g);
+});
+
+/* ---------- 4. 层间主数据流 ---------- */
+const flows = E('g', {});
+LAYERS.forEach((L, li) => {
+  if (li === LAYERS.length - 1) return;
+  const next = LAYERS[li + 1];
+  const y1 = L.y + L.h + 3, y2 = next.y - 4;
+  const midY = (L.y + L.h + next.y) / 2;
+  const g = E('g', { 'data-view': L.view + ' ' + next.view }, flows);
+  for (let i = 0; i < 5; i++) {
+    E('path', {
+      d: 'M ' + colC(i) + ' ' + y1 + ' V ' + y2,
+      class: 'edge', stroke: next.color, 'marker-end': 'url(#arCyan)'
+    }, g);
+  }
+  T(1210, midY + 3, GAP_LABELS[li], 'gapLab', g, { 'text-anchor': 'end' });
+  // 中间列的一颗流动数据点
+  const p = E('circle', { r: 3, fill: next.color, class: 'pkt' }, g);
+  E('animateMotion', {
+    path: 'M ' + colC(2) + ' ' + y1 + ' V ' + y2,
+    dur: '2.2s', begin: (li * 0.28) + 's', repeatCount: 'indefinite'
+  }, p);
+});
+
+/* ---------- 5. 三条外部回路（绘制在层带之上） ---------- */
+function route(d, color, marker, label, lx, ly, views, dur) {
+  const g = E('g', { 'data-view': views });
+  E('path', { d: d, class: 'route', stroke: color, 'stroke-dasharray': '7 5', 'marker-end': 'url(#' + marker + ')' }, g);
+  const p = E('circle', { r: 3.4, fill: color, class: 'pkt' }, g);
+  E('animateMotion', { path: d, dur: dur, repeatCount: 'indefinite' }, p);
+  const tx = T(lx, ly, label, 'routeLbl', g, {
+    fill: color, 'text-anchor': 'middle', transform: 'rotate(-90 ' + lx + ' ' + ly + ')'
+  });
+  tx.setAttribute('letter-spacing', '1');
+  return g;
+}
+// 知识索引供给：L6 → L3（右侧）
+route('M 1210 718 H 1250 V 350 H 1214', '#34d399', 'arGreen', '知识索引供给 KNOWLEDGE SUPPLY', 1256, 534, 'online offline', '4.2s');
+// 评估反馈闭环：L7 → L5（右侧）
+route('M 1210 834 H 1268 V 602 H 1214', '#f9a8d4', 'arPink', '评估反馈 FEEDBACK LOOP', 1272, 720, 'eval', '5s');
+// 回答与引用返回：L4 → L1（左侧）
+route('M 200 474 H 22 V 110 H 196', '#60a5fa', 'arBlue', '回答与引用返回 ANSWER', 16, 292, 'online', '4.6s');
+
+/* ---------- 6. 层标签（覆盖回路横线，保证文字清晰） ---------- */
+LAYERS.forEach(L => {
+  const g = E('g', { 'data-view': L.view });
+  E('rect', { x: 46, y: L.y + 3, width: 150, height: L.h - 6, rx: 9, class: 'labBg' }, g);
+  T(56, L.y + 22, L.no, 'labNo', g, { fill: L.color });
+  T(56, L.y + 44, L.name, 'labName', g);
+  T(56, L.y + 60, L.en, 'labEn', g);
+  T(56, L.y + 78, L.tag, 'labTag', g, { fill: L.color, 'fill-opacity': '.85' });
+});
+
+/* ---------- 7. 节点 ---------- */
+LAYERS.forEach(L => {
+  NODE_SETS[L.id].forEach((n, i) => {
+    const x = colX(i), y = L.y + (L.h - NH) / 2;
+    n.x = x; n.y = y; n.w = NW;
+    const g = E('g', {
+      class: 'node' + (L.core ? ' core' : ''),
+      'data-view': L.view,
+      'data-id': n.id, tabindex: '0', role: 'button',
+      'aria-label': n.t
+    });
+    E('rect', { x: x, y: y, width: NW, height: NH, rx: 10, class: 'box' }, g);
+    E('rect', { x: x + 1, y: y + 1, width: NW - 2, height: 3, rx: 1.5, fill: L.color, 'fill-opacity': '.8' }, g);
+    E('circle', { cx: x + NW - 13, cy: y + 14, r: 2.8, fill: L.color, 'fill-opacity': '.9' }, g);
+    T(x + 11, y + 24, n.t, 't', g);
+    T(x + 11, y + 43, n.s, 's', g);
+    if (n.star) T(x + NW - 14, y + 46, '★', 'star', g, { 'text-anchor': 'middle' });
+    g.addEventListener('click', () => selectNode(n.id));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectNode(n.id); } });
+  });
+});
+
+/* ---------- 8. 图内图例 ---------- */
+const lg = E('g', {});
+const legend = [
+  ['#67e8f9', '在线推理链路  L1–L4'],
+  ['#34d399', '离线知识构建  L5–L6'],
+  ['#fb7185', '评估闭环  L7'],
+  ['#fbbf24', '★ 研究重点模块']
+];
+legend.forEach((it, i) => {
+  const x = 44 + i * 300;
+  E('rect', { x: x, y: 890, width: 12, height: 12, rx: 3, fill: it[0], 'fill-opacity': '.22', stroke: it[0] }, lg);
+  T(x + 20, 900, it[1], 'lgTxt', lg);
+});
+T(1236, 900, 'SOLID = 主数据流　·　DASHED = 反馈 / 供给回路', 'lgTxt', lg, { 'text-anchor': 'end' });
+
+/* =========================================================
+   交互：视图切换 / 节点详情 / 动画 / 导出
+   ========================================================= */
+const VIEWS = [
+  { id: 'all', name: '总体架构', steps: [
+    '<b>三域协同：</b>在线推理（L1–L4）负责实时问答，离线构建（L5–L6）负责知识生产，评估闭环（L7）负责度量与迭代。',
+    '<b>主链路：</b>多渠道接入 → 意图与对话状态 → 混合检索与重排 → 证据约束生成 → 带引用的回答。',
+    '<b>知识链路：</b>多源语料 → 解析分块 → 向量化与抽取 → 混合索引 → 反哺检索层。',
+    '<b>闭环：</b>用户反馈与难例挖掘驱动知识增量更新、模型微调与 A/B 验证。'
+  ] },
+  { id: 'online', name: '在线推理链路', steps: [
+    '<b>L1 接入：</b>Web/APP、企微小程序、语音、OpenAPI 统一规范化为对话事件。',
+    '<b>L2 理解：</b>意图与槽位识别、多轮状态跟踪、Query 改写与澄清策略。',
+    '<b>L3 检索：</b>动态融合 BM25 + 稠密向量 + 图检索，Cross-Encoder 精排后做置信度门控。',
+    '<b>L4 生成：</b>证据注入 Prompt → LLM 流式生成 → 陈述级归因 → 幻觉校验 → 安全过滤。',
+    '<b>输出：</b>回答连同引用编号沿左侧回路返回用户，形成可审计证据链。'
+  ] },
+  { id: 'offline', name: '离线知识构建', steps: [
+    '<b>采集：</b>FAQ、工单、产品手册、政策文件等多源异构语料统一接入。',
+    '<b>解析：</b>版面分析 + OCR，保留标题层级与章节路径作为检索元数据。',
+    '<b>分块：</b>按标题树与语义边界自适应切分，控制粒度与重叠。',
+    '<b>表征：</b>领域对比学习微调 Embedding，抽取实体关系与 QA 对。',
+    '<b>入库：</b>写入向量库、倒排索引、关系库与图谱，并记录版本与权限。',
+    '<b>供给：</b>混合索引经右侧回路向在线检索层提供可过滤的知识服务。'
+  ] },
+  { id: 'eval', name: '评估与持续学习', steps: [
+    '<b>数据：</b>构建含标准答案与证据标注的领域评测集，双人标注 + Cohen κ 检验。',
+    '<b>指标：</b>Recall@K / MRR / nDCG / Faithfulness / ROUGE-L / BERTScore / P95 延迟。',
+    '<b>失败分析：</b>从点赞、追问、转人工等信号中聚类难例，主动学习优先标注。',
+    '<b>验证：</b>A/B 平台对检索策略、重排模型与 Prompt 版本做显著性检验。',
+    '<b>进化：</b>审核通过的知识增量入库，周期性 LoRA 微调与回归测试，构成数据飞轮。'
+  ] }
+];
+
+let view = 'all', selectedId = null, animOn = true;
+
+function setView(v) {
+  view = v;
+  root.querySelectorAll('[data-view]').forEach(e => {
+    const tags = (e.getAttribute('data-view') || '').split(' ');
+    const on = v === 'all' || tags.indexOf(v) >= 0;
+    e.classList.toggle('dim', !on);
+  });
+  const info = VIEWS.find(x => x.id === v);
+  $('viewName').textContent = '视图：' + info.name;
+  $('viewSteps').innerHTML = info.steps.map(s => '<li>' + s + '</li>').join('');
+  $('viewGroup').querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.view === v));
+}
+
+function renderNodeDetail() {
+  const box = $('nodeBody');
+  if (!selectedId) {
+    box.innerHTML = '<div class="desc">尚未选中模块。点击上方 <b style="color:var(--cyan)">SVG 架构图中的任意节点</b>，可查看该模块的功能定位、采用方法与待解决的研究难点。带 ★ 标记的为本文重点研究对象。</div>' +
+      '<div class="kv"><span>层次</span><b>7 层</b><span>模块</span><b>35 个</b><span>核心创新区</span><b>L3 检索增强 + L4 可信生成</b><span>图件格式</span><b>SVG（可导出 / 可编辑）</b></div>';
+    return;
+  }
+  const n = NODE_BY_ID[selectedId], L = n.layer;
+  box.innerHTML =
+    '<div class="node-head"><span class="nm">' + esc(n.t) + '</span>' +
+      '<span class="badge" style="color:' + L.color + ';border-color:' + L.color + '66;background:' + L.color + '18">' + esc(L.name) + '</span>' +
+      (n.star ? '<span class="badge" style="color:#fbbf24;border-color:#fbbf2455;background:#fbbf2418">★ 研究重点</span>' : '') + '</div>' +
+    '<p class="desc">' + esc(n.d) + '</p>' +
+    '<div class="kv">' +
+      '<span>采用方法</span><b>' + esc(n.m || '工程支撑模块，按标准工程方案实现并纳入系统集成测试。') + '</b>' +
+      '<span>研究难点</span><b class="hl">' + esc(n.k || '接口规范、性能与可观测性，作为系统基线能力。') + '</b>' +
+      '<span>所属域</span><b>' + esc(L.tag) + '</b>' +
+      '<span>层次编号</span><b>' + L.no + ' ' + esc(L.en) + '</b>' +
+    '</div>';
+}
+
+function selectNode(id) {
+  root.querySelectorAll('.node').forEach(g => g.classList.toggle('sel', g.getAttribute('data-id') === id));
+  selectedId = id;
+  renderNodeDetail();
+}
+
+/* ---------- 控件 ---------- */
+const vg = $('viewGroup');
+VIEWS.forEach(v => {
+  const c = document.createElement('button');
+  c.className = 'chip' + (v.id === 'all' ? ' on' : '');
+  c.textContent = v.name;
+  c.dataset.view = v.id;
+  c.onclick = () => setView(v.id);
+  vg.appendChild(c);
+});
+
+$('animBtn').onclick = () => {
+  animOn = !animOn;
+  svg.classList.toggle('no-anim', !animOn);
+  if (typeof svg.pauseAnimations === 'function') {
+    if (animOn) svg.unpauseAnimations(); else svg.pauseAnimations();
+  }
+  $('animBtn').textContent = animOn ? '⏸ 暂停流动' : '▶ 继续流动';
+};
+$('resetBtn').onclick = () => {
+  selectedId = null;
+  root.querySelectorAll('.node').forEach(g => g.classList.remove('sel'));
+  renderNodeDetail();
+  setView('all');
+};
+$('coreChk').onchange = e => { $('focusGroup').classList.toggle('hidden', !e.target.checked); };
+$('exportBtn').onclick = () => {
+  const dimmed = Array.from(root.querySelectorAll('.dim'));
+  dimmed.forEach(e => e.classList.remove('dim'));
+  const clone = svg.cloneNode(true);
+  clone.setAttribute('width', '1280');
+  clone.setAttribute('height', '910');
+  const out = new XMLSerializer().serializeToString(clone);
+  dimmed.forEach(e => e.classList.add('dim'));
+  const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + out], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '18-3-智能客服系统架构图.svg';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+};
+
+/* ---------- 初始化（支持 #online / #offline / #eval 直达） ---------- */
+renderNodeDetail();
+const hashView = decodeURIComponent(location.hash.replace('#', ''));
+setView(VIEWS.some(v => v.id === hashView) ? hashView : 'all');
+window.addEventListener('hashchange', () => {
+  const v = decodeURIComponent(location.hash.replace('#', ''));
+  setView(VIEWS.some(x => x.id === v) ? v : 'all');
+});
+</script>
+</body>
+</html>

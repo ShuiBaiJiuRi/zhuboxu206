@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-1 · Canvas 动画：粒子文字「朱泊旭」</title>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1180px, 100%);
+    background: rgba(10, 16, 28, 0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative; padding: 48px 48px 26px;
+    background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)), rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: .8; }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 22px; color: #08111d; font-family: var(--mono);
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.7rem, 2.5vw, 2.6rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 900px; color: var(--muted); line-height: 1.8; }
+  .hero .sub b { color: var(--cyan); }
+  .jump {
+    position: relative; z-index: 1; display: inline-block; margin-top: 12px;
+    color: var(--cyan); text-decoration: none; font-size: 0.86rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .jump:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 14px; }
+  .section-title h2 { margin: 0; font-size: 1.25rem; }
+  .section-title .line { flex: 1; height: 1px; background: var(--line); }
+  .section-title .pill { font-size: 0.76rem; color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.25); padding: 3px 10px; border-radius: 999px; }
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 16px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group > .lb { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 8px 14px; border-radius: 10px; font-size: 0.84rem; transition: all .18s;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 800; }
+  .chip {
+    cursor: pointer; border: 1px solid var(--line); color: var(--muted);
+    background: rgba(148, 163, 184, 0.06); padding: 6px 12px; border-radius: 999px;
+    font-size: 0.8rem; transition: all .18s;
+  }
+  .chip:hover { color: var(--text); border-color: rgba(103, 232, 249, 0.35); }
+  .chip.on { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 700; }
+  .swatch {
+    cursor: pointer; width: 26px; height: 26px; border-radius: 8px; border: 2px solid transparent;
+    transition: transform .18s, border-color .18s;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.on { border-color: #fff; }
+  input[type=range] { width: 110px; accent-color: var(--cyan); }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--cyan); }
+
+  /* ---------- 舞台 ---------- */
+  .stage-wrap {
+    position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; background: #050b16;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 40px rgba(2, 6, 23, 0.4);
+  }
+  #mainCanvas { display: block; width: 100%; cursor: crosshair; }
+  .stage-badge {
+    position: absolute; top: 12px; right: 14px; pointer-events: none;
+    font-family: var(--mono); font-size: 0.7rem; color: rgba(229, 238, 252, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12); padding: 4px 10px; border-radius: 999px;
+    background: rgba(2, 6, 23, 0.4);
+  }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .stat {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+  }
+  .stat .num { display: block; font-family: var(--mono); font-size: 1.15rem; font-weight: 800; color: var(--cyan); }
+  .stat .label { color: var(--muted); font-size: 0.78rem; }
+
+  /* ---------- 小演示 ---------- */
+  .demos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .panel h3 { margin: 0 0 4px; font-size: 0.98rem; display: flex; align-items: center; gap: 8px; }
+  .panel h3 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
+  .panel p { margin: 0 0 10px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+  .panel canvas { display: block; width: 100%; border-radius: 12px; border: 1px solid var(--line); background: #050b16; }
+
+  /* ---------- 原理 ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card .no {
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    border-radius: 8px; font-family: var(--mono); font-size: 0.76rem; font-weight: 800;
+    color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); margin-bottom: 10px;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 0.95rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.83rem; line-height: 1.7; }
+  .card code { font-family: var(--mono); color: var(--amber); font-size: 0.8rem; }
+
+  pre.code {
+    margin: 14px 0 0; padding: 16px; border-radius: 14px; overflow-x: auto;
+    background: rgba(2, 6, 23, 0.6); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.8rem; line-height: 1.7; color: #cfe3ff;
+  }
+  pre.code .k { color: #c792ea; } pre.code .f { color: #82aaff; }
+  pre.code .s { color: #c3e88d; } pre.code .n { color: #f78c6c; }
+  pre.code .c { color: #5c6b82; }
+
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 900px) {
+    .demos, .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 620px) {
+    .hero, .content { padding-left: 18px; padding-right: 18px; }
+    .demos, .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">CV</div>
+      <div><h1>Canvas 动画实验室</h1></div>
+    </div>
+    <p class="sub">
+      用 <b>离屏画布采样文字</b>，把「朱泊旭」三个字拆成上千个像素点，再用<b>弹簧物理</b>让粒子飞回原位。
+      切换效果、拖速度条、把鼠标移进画布——粒子会被你推开。画面里的一切（星光、光环、文字、波形）都由
+      <b>&lt;canvas&gt; 2D API</b> 逐帧绘制，没有一张图片。
+    </p>
+    <a class="jump" href="18-2.html">下一站：18-2 Canvas 电商系统架构图 →</a>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <div class="group">
+        <button class="btn primary" id="playBtn">⏸ 暂停</button>
+        <button class="btn" id="replayBtn">↺ 重新聚合</button>
+        <button class="btn" id="burstBtn">✦ 绽放</button>
+        <button class="btn" id="saveBtn">保存 PNG</button>
+      </div>
+      <div class="group" id="modeGroup"><span class="lb">效果</span></div>
+      <div class="group" id="themeGroup"><span class="lb">配色</span></div>
+      <div class="group">
+        <span class="lb">速度</span><input type="range" id="speed" min="0.2" max="2.4" step="0.1" value="1">
+        <span class="lb" id="speedVal">1.0×</span>
+      </div>
+      <div class="group">
+        <label class="check"><input type="checkbox" id="mouseChk" checked>鼠标排斥</label>
+        <label class="check"><input type="checkbox" id="gridChk" checked>网格</label>
+      </div>
+    </div>
+
+    <div class="stage-wrap" id="stageWrap">
+      <canvas id="mainCanvas"></canvas>
+      <div class="stage-badge">canvas 2d · requestAnimationFrame</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="num" id="stParticles">—</span><span class="label">文字粒子数</span></div>
+      <div class="stat"><span class="num" id="stFps">—</span><span class="label">实时帧率 FPS</span></div>
+      <div class="stat"><span class="num" id="stSize">—</span><span class="label">画布逻辑尺寸</span></div>
+      <div class="stat"><span class="num" id="stMode">粒子聚合</span><span class="label">当前动画模式</span></div>
+    </div>
+
+    <div class="section-title">
+      <h2>同一帧循环里的三个小演示</h2><span class="pill">共享 requestAnimationFrame</span><span class="line"></span>
+    </div>
+    <div class="demos">
+      <div class="panel">
+        <h3><span class="dot"></span>弹跳小球</h3>
+        <p>重力 + 边界反弹 + 运动残影，最基础的物理动画。</p>
+        <canvas id="ballsCanvas" height="170"></canvas>
+      </div>
+      <div class="panel">
+        <h3><span class="dot"></span>模拟时钟</h3>
+        <p>save / restore、rotate、三角函数算指针角度，读取真实时间。</p>
+        <canvas id="clockCanvas" height="170"></canvas>
+      </div>
+      <div class="panel">
+        <h3><span class="dot"></span>正弦波形</h3>
+        <p>createLinearGradient 渐变描边，多层相位叠加出海浪。</p>
+        <canvas id="waveCanvas" height="170"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <h2>它是怎么做出来的</h2><span class="pill">核心思路</span><span class="line"></span>
+    </div>
+    <div class="cards">
+      <div class="card"><span class="no">1</span><h4>离屏采样</h4><p>先在内存画布上写白色文字，用 <code>getImageData()</code> 读取 alpha 通道，按固定步长取点，得到「文字的像素坐标表」。</p></div>
+      <div class="card"><span class="no">2</span><h4>弹簧物理</h4><p>每个粒子有位置、速度、目标点。每帧 <code>v += (target - pos) × k</code>，再乘阻尼，就能自然地飞回并轻微回弹。</p></div>
+      <div class="card"><span class="no">3</span><h4>叠加发光</h4><p>绘制粒子时切到 <code>globalCompositeOperation = 'lighter'</code>，颜色叠加出霓虹感，再加一条横向扫光。</p></div>
+      <div class="card"><span class="no">4</span><h4>设备像素比</h4><p><code>canvas.width = 逻辑宽 × dpr</code> 后 <code>setTransform</code> 缩放，高分屏上文字才不会发虚。</p></div>
+    </div>
+
+<pre class="code"><span class="c">// ① 把文字变成坐标点</span>
+<span class="k">const</span> off = document.<span class="f">createElement</span>(<span class="s">'canvas'</span>);
+off.width = W; off.height = H;
+<span class="k">const</span> o = off.<span class="f">getContext</span>(<span class="s">'2d'</span>);
+o.font = <span class="s">'900 200px "Microsoft YaHei"'</span>;
+o.textAlign = <span class="s">'center'</span>; o.textBaseline = <span class="s">'middle'</span>;
+o.<span class="f">fillText</span>(<span class="s">'朱泊旭'</span>, W / <span class="n">2</span>, H / <span class="n">2</span>);
+<span class="k">const</span> data = o.<span class="f">getImageData</span>(<span class="n">0</span>, <span class="n">0</span>, W, H).data;
+<span class="k">for</span> (<span class="k">let</span> y = <span class="n">0</span>; y &lt; H; y += <span class="n">5</span>)
+  <span class="k">for</span> (<span class="k">let</span> x = <span class="n">0</span>; x &lt; W; x += <span class="n">5</span>)
+    <span class="k">if</span> (data[(y * W + x) * <span class="n">4</span> + <span class="n">3</span>] &gt; <span class="n">100</span>) points.<span class="f">push</span>({ x, y });
+
+<span class="c">// ② 每帧把粒子拉回目标点（不同模式只改 target）</span>
+p.vx += (tx - p.x) * <span class="n">0.045</span>;  p.vy += (ty - p.y) * <span class="n">0.045</span>;
+p.vx *= <span class="n">0.86</span>;  p.vy *= <span class="n">0.86</span>;
+p.x += p.vx;  p.y += p.vy;
+
+<span class="c">// ③ 一个帧循环驱动全部画布</span>
+<span class="k">function</span> <span class="f">loop</span>(ts) { <span class="f">drawMain</span>(ts); <span class="f">drawDemos</span>(ts); <span class="f">requestAnimationFrame</span>(loop); }</pre>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 18-1 Canvas 动画 · 朱泊旭</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   18-1 Canvas 动画：粒子文字「朱泊旭」
+   ========================================================= */
+const NAME = '朱泊旭';
+const $ = id => document.getElementById(id);
+const cv = $('mainCanvas');
+const ctx = cv.getContext('2d');
+const wrap = $('stageWrap');
+
+const THEMES = {
+  aurora: { label: '极光青', colors: ['#67e8f9', '#60a5fa', '#a78bfa', '#34d399'], bg1: '#06182a', bg2: '#0a1024', glow: 'rgba(103,232,249,0.16)' },
+  sunset: { label: '日落橙', colors: ['#fbbf24', '#fb7185', '#f9a8d4', '#fb923c'], bg1: '#241021', bg2: '#140c26', glow: 'rgba(251,146,60,0.16)' },
+  neon:   { label: '霓虹紫', colors: ['#a78bfa', '#f9a8d4', '#67e8f9', '#818cf8'], bg1: '#150c2b', bg2: '#08102a', glow: 'rgba(167,139,250,0.18)' }
+};
+const MODES = [
+  { id: 'gather', label: '粒子聚合' },
+  { id: 'wave',   label: '波浪呼吸' },
+  { id: 'spin',   label: '星环旋转' },
+  { id: 'pulse',  label: '光波脉冲' }
+];
+
+let W = 900, H = 400, dpr = 1;
+let particles = [], stars = [];
+let mode = 'gather', theme = 'aurora', speed = 1, paused = false;
+let interact = true, showGrid = true;
+let t = 0, fps = 60, lastTs = 0, fpsAcc = 0, fpsFrames = 0;
+const mouse = { x: -999, y: -999, active: false };
+
+/* ---------- 画布尺寸 / DPR ---------- */
+function resizeMain() {
+  const w = Math.max(300, Math.round(wrap.clientWidth));
+  W = w;
+  H = Math.round(Math.min(460, Math.max(300, w * 0.42)));
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildStars();
+  buildParticles();
+  resizeDemos();
+  $('stSize').textContent = W + ' × ' + H;
+}
+
+/* ---------- 采样文字 → 粒子 ---------- */
+function buildParticles() {
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const o = off.getContext('2d', { willReadFrequently: true });
+  const fs = Math.min(H * 0.46, W * 0.21);
+  o.fillStyle = '#fff';
+  o.textAlign = 'center';
+  o.textBaseline = 'middle';
+  o.font = '900 ' + fs + 'px "Microsoft YaHei","PingFang SC",sans-serif';
+  o.fillText(NAME, W / 2, H / 2 - H * 0.03);
+
+  const data = o.getImageData(0, 0, W, H).data;
+  const gap = W < 560 ? 4 : 5;
+  const pts = [];
+  for (let y = 0; y < H; y += gap) {
+    for (let x = 0; x < W; x += gap) {
+      if (data[(y * W + x) * 4 + 3] > 100) pts.push({ x: x, y: y });
+    }
+  }
+  // 打乱，让粒子从四面八方汇聚
+  for (let i = pts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp;
+  }
+  const colors = THEMES[theme].colors;
+  const maxN = 3600;
+  const stride = Math.max(1, Math.ceil(pts.length / maxN));
+  particles = [];
+  for (let i = 0; i < pts.length; i += stride) {
+    const p = pts[i];
+    const dx = p.x - W / 2, dy = p.y - H / 2;
+    const d = Math.hypot(dx, dy) || 1;
+    const f = 1 + Math.random() * 2.5;
+    particles.push({
+      x: p.x + (Math.random() - 0.5) * 4, y: p.y + (Math.random() - 0.5) * 4,
+      vx: dx / d * f, vy: dy / d * f, tx: p.x, ty: p.y,
+      size: 1.5 + Math.random() * 1.6,
+      c: colors[Math.floor(p.x / W * colors.length) % colors.length],
+      ph: Math.random() * Math.PI * 2
+    });
+  }
+  $('stParticles').textContent = particles.length.toLocaleString();
+}
+
+// 「重新聚合」：把粒子打散到全屏，再让弹簧把它们拉回文字
+function scatter() {
+  particles.forEach(p => {
+    p.x = Math.random() * W; p.y = Math.random() * H;
+    p.vx = 0; p.vy = 0;
+  });
+}
+
+function buildStars() {
+  stars = Array.from({ length: 90 }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: 0.4 + Math.random() * 1.3, ph: Math.random() * 6.28,
+    v: 0.08 + Math.random() * 0.3
+  }));
+}
+
+/* ---------- 不同模式的目标点 ---------- */
+function targetOf(p, out) {
+  switch (mode) {
+    case 'wave':
+      out.x = p.tx + Math.sin(p.ty / 26 + t * 2) * 4;
+      out.y = p.ty + Math.sin(p.tx / 42 + t * 2.3) * 12;
+      break;
+    case 'spin': {
+      const a = t * 0.5;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const dx = p.tx - W / 2, dy = (p.ty - H / 2) * 1.15;
+      out.x = W / 2 + dx * ca - dy * sa * 0.35;
+      out.y = H / 2 + dx * sa * 0.35 + dy * ca;
+      break;
+    }
+    case 'pulse': {
+      const dx = p.tx - W / 2, dy = p.ty - H / 2;
+      const d = Math.hypot(dx, dy) || 1;
+      const s = Math.sin(d / 34 - t * 3) * 16;
+      out.x = p.tx + dx / d * s;
+      out.y = p.ty + dy / d * s;
+      break;
+    }
+    default:
+      out.x = p.tx + Math.sin(t * 1.6 + p.ph) * 1.2;
+      out.y = p.ty + Math.cos(t * 1.4 + p.ph) * 1.2;
+  }
+}
+
+/* ---------- 主画布绘制 ---------- */
+const tmpTarget = { x: 0, y: 0 };
+function drawMain() {
+  const th = THEMES[theme];
+
+  // 背景
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, th.bg1); g.addColorStop(1, th.bg2);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // 网格
+  if (showGrid) {
+    ctx.strokeStyle = 'rgba(148,163,184,0.055)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 40) { ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, H); }
+    for (let y = 0; y <= H; y += 40) { ctx.moveTo(0, y + .5); ctx.lineTo(W, y + .5); }
+    ctx.stroke();
+  }
+
+  // 中心光晕
+  const rg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.min(W, H) * 0.55);
+  rg.addColorStop(0, th.glow); rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+
+  // 星光
+  for (const s of stars) {
+    const a = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 2 + s.ph));
+    ctx.globalAlpha = a;
+    ctx.fillStyle = th.colors[0];
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // 旋转虚线光环
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(t * 0.18);
+  ctx.strokeStyle = th.colors[1];
+  ctx.globalAlpha = 0.32;
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([10, 14]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, Math.min(W * 0.34, 330), Math.min(H * 0.37, 160), 0, 0, 6.2832);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.rotate(-t * 0.34);
+  ctx.strokeStyle = th.colors[2];
+  ctx.globalAlpha = 0.2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, Math.min(W * 0.28, 270), Math.min(H * 0.31, 132), 0, 0, 6.2832);
+  ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  // 文字底稿：保证任何时刻「朱泊旭」都清晰可辨
+  ctx.save();
+  ctx.globalAlpha = 0.075;
+  ctx.fillStyle = th.colors[0];
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '900 ' + Math.min(H * 0.46, W * 0.21) + 'px "Microsoft YaHei","PingFang SC",sans-serif';
+  ctx.fillText(NAME, W / 2, H / 2 - H * 0.03);
+  ctx.restore();
+
+  // 粒子
+  ctx.globalCompositeOperation = 'lighter';
+  const sweepX = (t * 110) % (W + 260) - 130;
+  for (const p of particles) {
+    targetOf(p, tmpTarget);
+    if (!paused) {
+      p.vx += (tmpTarget.x - p.x) * 0.045;
+      p.vy += (tmpTarget.y - p.y) * 0.045;
+      p.vx *= 0.86; p.vy *= 0.86;
+      if (interact && mouse.active) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 6400 && d2 > 0.1) {
+          const d = Math.sqrt(d2), f = (1 - d / 80) * 2.6;
+          p.vx += dx / d * f; p.vy += dy / d * f;
+        }
+      }
+      p.x += p.vx; p.y += p.vy;
+    }
+    const dd = p.x - sweepX;
+    const shine = 0.55 + 0.45 * Math.exp(-(dd * dd) / 3400);
+    ctx.globalAlpha = shine;
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 画布上的说明文字
+  ctx.font = '600 11px "Cascadia Code",Consolas,monospace';
+  ctx.fillStyle = 'rgba(229,238,252,0.42)';
+  ctx.textAlign = 'left';
+  ctx.fillText('CANVAS / 2D  ·  PARTICLE TEXT', 18, 24);
+  ctx.textAlign = 'right';
+  ctx.fillText('FPS ' + fps, W - 18, 24);
+
+  const subY = H - 40;
+  ctx.textAlign = 'center';
+  const sg = ctx.createLinearGradient(W / 2 - 150, 0, W / 2 + 150, 0);
+  sg.addColorStop(0, th.colors[0]); sg.addColorStop(0.5, '#e5eefc'); sg.addColorStop(1, th.colors[2]);
+  ctx.fillStyle = sg;
+  ctx.font = '600 13px "Cascadia Code",Consolas,monospace';
+  ctx.fillText('ZHU BOXU   ·   CANVAS ANIMATION', W / 2, subY);
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+  ctx.beginPath(); ctx.moveTo(W / 2 - 120, subY + 12); ctx.lineTo(W / 2 + 120, subY + 12); ctx.stroke();
+  ctx.fillStyle = 'rgba(155,176,201,0.7)';
+  ctx.font = '12px "Microsoft YaHei",sans-serif';
+  ctx.fillText('朱泊旭 · 高级网页设计课程实践 · 18-1', W / 2, subY + 30);
+}
+
+/* ---------- 三个小演示 ---------- */
+const demos = [
+  { id: 'ballsCanvas', ctx: null, w: 0, h: 170 },
+  { id: 'clockCanvas', ctx: null, w: 0, h: 170 },
+  { id: 'waveCanvas',  ctx: null, w: 0, h: 170 }
+];
+let balls = [];
+
+function resizeDemos() {
+  demos.forEach(d => {
+    const el = $(d.id);
+    d.w = Math.max(180, Math.round(el.clientWidth || el.parentElement.clientWidth));
+    el.width = Math.round(d.w * dpr);
+    el.height = Math.round(d.h * dpr);
+    el.style.height = d.h + 'px';
+    d.ctx = el.getContext('2d');
+    d.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  });
+  const colors = ['#67e8f9', '#a78bfa', '#f9a8d4', '#34d399', '#fbbf24', '#fb7185'];
+  balls = Array.from({ length: 8 }, (_, i) => ({
+    x: 30 + Math.random() * Math.max(40, demos[0].w - 60),
+    y: 20 + Math.random() * 90,
+    vx: (Math.random() - 0.5) * 3.4,
+    vy: Math.random() * 2,
+    r: 7 + Math.random() * 8,
+    c: colors[i % colors.length]
+  }));
+}
+
+function drawBalls() {
+  const d = demos[0], c = d.ctx, w = d.w, h = d.h;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#050b16'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(148,163,184,0.08)';
+  c.beginPath(); c.moveTo(0, h - 1); c.lineTo(w, h - 1); c.stroke();
+  for (const b of balls) {
+    if (!paused) {
+      b.vy += 0.13; b.x += b.vx; b.y += b.vy;
+      if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+      if (b.x + b.r > w) { b.x = w - b.r; b.vx = -Math.abs(b.vx); }
+      if (b.y + b.r > h - 2) { b.y = h - 2 - b.r; b.vy = -Math.abs(b.vy) * 0.88; }
+      if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy); }
+    }
+    c.globalAlpha = 0.18;
+    c.fillStyle = b.c;
+    c.beginPath(); c.arc(b.x - b.vx * 4, b.y - b.vy * 4, b.r * 0.85, 0, 6.2832); c.fill();
+    c.globalAlpha = 1;
+    const g = c.createRadialGradient(b.x - b.r * .3, b.y - b.r * .35, 1, b.x, b.y, b.r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, b.c); g.addColorStop(1, 'rgba(2,6,23,0.9)');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(b.x, b.y, b.r, 0, 6.2832); c.fill();
+  }
+}
+
+function drawClock() {
+  const d = demos[1], c = d.ctx, w = d.w, h = d.h;
+  const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 14;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#050b16'; c.fillRect(0, 0, w, h);
+  const bg = c.createRadialGradient(cx, cy, 4, cx, cy, R);
+  bg.addColorStop(0, 'rgba(103,232,249,0.12)'); bg.addColorStop(1, 'rgba(2,6,23,0)');
+  c.fillStyle = bg; c.beginPath(); c.arc(cx, cy, R, 0, 6.2832); c.fill();
+  c.strokeStyle = 'rgba(103,232,249,0.55)'; c.lineWidth = 2;
+  c.beginPath(); c.arc(cx, cy, R, 0, 6.2832); c.stroke();
+  for (let i = 0; i < 60; i++) {
+    const a = i * Math.PI / 30 - Math.PI / 2;
+    const big = i % 5 === 0;
+    const r1 = R - (big ? 11 : 5);
+    c.strokeStyle = big ? 'rgba(229,238,252,0.8)' : 'rgba(155,176,201,0.3)';
+    c.lineWidth = big ? 2 : 1;
+    c.beginPath();
+    c.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    c.lineTo(cx + Math.cos(a) * (R - 2), cy + Math.sin(a) * (R - 2));
+    c.stroke();
+  }
+  const now = new Date();
+  const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+  const min = now.getMinutes() + sec / 60;
+  const hr = (now.getHours() % 12) + min / 60;
+  function hand(angle, len, width, color) {
+    c.save(); c.translate(cx, cy); c.rotate(angle - Math.PI / 2);
+    c.strokeStyle = color; c.lineWidth = width; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-8, 0); c.lineTo(len, 0); c.stroke();
+    c.restore();
+  }
+  hand(hr * Math.PI / 6, R * 0.48, 4, '#e5eefc');
+  hand(min * Math.PI / 30, R * 0.68, 3, '#67e8f9');
+  hand(sec * Math.PI / 30, R * 0.78, 1.5, '#fb7185');
+  c.fillStyle = '#fb7185'; c.beginPath(); c.arc(cx, cy, 4, 0, 6.2832); c.fill();
+  c.fillStyle = 'rgba(155,176,201,0.75)';
+  c.font = '11px "Cascadia Code",Consolas,monospace';
+  c.textAlign = 'center';
+  c.fillText(now.toLocaleTimeString('zh-CN', { hour12: false }), cx, h - 8);
+}
+
+function drawWave() {
+  const d = demos[2], c = d.ctx, w = d.w, h = d.h;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = '#050b16'; c.fillRect(0, 0, w, h);
+  const cols = ['#67e8f9', '#a78bfa', '#f9a8d4'];
+  for (let layer = 0; layer < 3; layer++) {
+    const g = c.createLinearGradient(0, 0, w, 0);
+    g.addColorStop(0, 'rgba(103,232,249,0.15)');
+    g.addColorStop(0.5, cols[layer]);
+    g.addColorStop(1, 'rgba(167,139,250,0.15)');
+    c.strokeStyle = g; c.lineWidth = 2;
+    c.globalAlpha = 0.9 - layer * 0.22;
+    c.beginPath();
+    for (let x = 0; x <= w; x += 3) {
+      const y = h / 2 + Math.sin(x / 38 + t * 1.7 + layer * 0.9) * (26 + layer * 8)
+        + Math.sin(x / 17 - t * 1.1 + layer) * 6;
+      if (x === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+  }
+  c.globalAlpha = 1;
+  // 底部音频柱
+  const n = 26, bw = w / n;
+  for (let i = 0; i < n; i++) {
+    const v = 0.25 + 0.75 * Math.abs(Math.sin(i * 0.55 + t * 2.2)) * (0.5 + 0.5 * Math.sin(i * 0.2 - t));
+    const bh = v * 34;
+    c.fillStyle = 'rgba(103,232,249,0.45)';
+    c.fillRect(i * bw + 2, h - bh - 4, bw - 4, bh);
+  }
+}
+
+/* ---------- 主循环 ---------- */
+function loop(ts) {
+  if (!lastTs) lastTs = ts;
+  const delta = Math.min(60, ts - lastTs);
+  lastTs = ts;
+  fpsAcc += delta; fpsFrames++;
+  if (fpsAcc >= 500) { fps = Math.round(1000 * fpsFrames / fpsAcc); fpsAcc = 0; fpsFrames = 0; $('stFps').textContent = fps; }
+
+  if (!paused) t += (delta / 1000) * speed;
+  drawMain();
+  drawBalls(); drawClock(); drawWave();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 控件 ---------- */
+function buildControls() {
+  const mg = $('modeGroup');
+  MODES.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (m.id === mode ? ' on' : '');
+    b.textContent = m.label;
+    b.dataset.mode = m.id;
+    b.onclick = () => {
+      mode = m.id;
+      mg.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.mode === mode));
+      $('stMode').textContent = m.label;
+    };
+    mg.appendChild(b);
+  });
+
+  const tg = $('themeGroup');
+  Object.keys(THEMES).forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (k === theme ? ' on' : '');
+    b.title = THEMES[k].label;
+    b.dataset.theme = k;
+    b.style.background = 'linear-gradient(135deg,' + THEMES[k].colors[0] + ',' + THEMES[k].colors[2] + ')';
+    b.onclick = () => {
+      theme = k;
+      tg.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x.dataset.theme === theme));
+      const colors = THEMES[theme].colors;
+      particles.forEach(p => { p.c = colors[Math.floor(p.tx / W * colors.length) % colors.length]; });
+    };
+    tg.appendChild(b);
+  });
+}
+
+$('playBtn').onclick = () => {
+  paused = !paused;
+  $('playBtn').textContent = paused ? '▶ 播放' : '⏸ 暂停';
+};
+$('replayBtn').onclick = () => { scatter(); };
+$('burstBtn').onclick = () => {
+  particles.forEach(p => {
+    const dx = p.x - W / 2, dy = p.y - H / 2;
+    const d = Math.hypot(dx, dy) || 1;
+    const f = 6 + Math.random() * 12;
+    p.vx += dx / d * f; p.vy += dy / d * f;
+  });
+};
+$('saveBtn').onclick = () => {
+  const a = document.createElement('a');
+  a.download = '18-1-canvas-朱泊旭.png';
+  a.href = cv.toDataURL('image/png');
+  a.click();
+};
+$('speed').oninput = e => { speed = Number(e.target.value); $('speedVal').textContent = speed.toFixed(1) + '×'; };
+$('mouseChk').onchange = e => { interact = e.target.checked; };
+$('gridChk').onchange = e => { showGrid = e.target.checked; };
+
+cv.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) * (W / r.width);
+  mouse.y = (e.clientY - r.top) * (H / r.height);
+  mouse.active = true;
+});
+cv.addEventListener('mouseleave', () => { mouse.active = false; });
+cv.addEventListener('touchmove', e => {
+  const r = cv.getBoundingClientRect();
+  mouse.x = (e.touches[0].clientX - r.left) * (W / r.width);
+  mouse.y = (e.touches[0].clientY - r.top) * (H / r.height);
+  mouse.active = true;
+}, { passive: true });
+
+window.addEventListener('resize', resizeMain);
+buildControls();
+resizeMain();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

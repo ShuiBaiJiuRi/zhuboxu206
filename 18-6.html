@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18-6 · Mermaid 智能客服系统流程图与 ER 图</title>
+<script src="./cdn/mermaid/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg-1: #07111f; --bg-2: #101b2d;
+    --panel: rgba(15, 23, 42, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e5eefc; --muted: #9bb0c9;
+    --blue: #60a5fa; --cyan: #67e8f9; --purple: #a78bfa;
+    --pink: #f9a8d4; --green: #34d399; --amber: #fbbf24; --red: #fb7185;
+    --shadow: rgba(2, 6, 23, 0.6); --radius: 18px;
+    --mono: "Cascadia Code", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(96, 165, 250, 0.2), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.2), transparent 30%),
+      linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+  }
+  body { display: flex; justify-content: center; padding: 40px 20px 80px; }
+  .page {
+    width: min(1280px, 100%);
+    background: rgba(10, 16, 28, 0.7); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 24px 90px var(--shadow);
+    backdrop-filter: blur(12px); overflow: hidden;
+  }
+
+  /* ---------- 头部 ---------- */
+  .hero {
+    position: relative; padding: 48px 48px 26px;
+    background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(167, 139, 250, 0.12)), rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(12px); opacity: .8; }
+  .hero::before { width: 220px; height: 220px; right: 8%; top: -50px; background: rgba(103, 232, 249, 0.18); }
+  .hero::after  { width: 180px; height: 180px; left: 6%; bottom: -30px; background: rgba(249, 168, 212, 0.16); }
+  .brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .logo {
+    width: 70px; height: 70px; border-radius: 20px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 19px; color: #08111d; font-family: var(--mono);
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    box-shadow: 0 16px 30px rgba(103, 232, 249, 0.25);
+  }
+  .hero h1 { margin: 0; font-size: clamp(1.65rem, 2.5vw, 2.5rem); letter-spacing: 1px; }
+  .hero .sub { position: relative; z-index: 1; margin: 0; max-width: 980px; color: var(--muted); line-height: 1.85; }
+  .hero .sub b { color: var(--cyan); }
+  .jumps { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .jump {
+    color: var(--cyan); text-decoration: none; font-size: 0.84rem;
+    border: 1px solid rgba(103, 232, 249, 0.28); padding: 6px 14px; border-radius: 999px;
+  }
+  .jump:hover { background: rgba(103, 232, 249, 0.1); }
+
+  .content { padding: 26px 48px 40px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 14px; }
+  .section-title h2 { margin: 0; font-size: 1.22rem; }
+  .section-title .line { flex: 1; height: 1px; background: var(--line); }
+  .section-title .pill { font-size: 0.75rem; color: var(--cyan); border: 1px solid rgba(103, 232, 249, 0.25); padding: 3px 10px; border-radius: 999px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px;
+  }
+  .stat .num { display: block; font-family: var(--mono); font-size: 1.05rem; font-weight: 800; color: var(--cyan); }
+  .stat .label { color: var(--muted); font-size: 0.77rem; line-height: 1.55; }
+
+  /* ---------- 控件 ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group > .lb { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn {
+    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text);
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(15, 23, 42, 0.2));
+    padding: 8px 14px; border-radius: 10px; font-size: 0.83rem; transition: all .18s;
+  }
+  .btn:hover { border-color: rgba(103, 232, 249, 0.4); transform: translateY(-1px); }
+  .btn.primary { color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--blue)); border-color: transparent; font-weight: 800; }
+  select {
+    background: rgba(2, 6, 23, 0.55); border: 1px solid var(--line); color: var(--text);
+    padding: 8px 12px; border-radius: 10px; font-size: 0.83rem; outline: none;
+  }
+  .tip-inline { margin-left: auto; font-size: 0.77rem; color: var(--muted); }
+  .status { font-size: 0.78rem; color: var(--muted); }
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--red); }
+
+  /* ---------- 图卡片 ---------- */
+  .chart-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .head h3 { margin: 0; font-size: 1.02rem; display: flex; align-items: center; gap: 8px; }
+  .head h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .badge {
+    font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; color: var(--cyan);
+    background: rgba(103, 232, 249, 0.1); border: 1px solid rgba(103, 232, 249, 0.26);
+  }
+  .card-tools { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .card-tools .btn { padding: 6px 11px; font-size: 0.78rem; }
+
+  .mmd-scroll {
+    overflow-x: auto; border-radius: 14px; border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(6, 14, 28, 0.6), rgba(4, 10, 22, 0.72));
+    padding: 18px;
+  }
+  .mmd { min-width: 560px; text-align: center; }
+  .mmd svg { display: block; margin: 0 auto; height: auto; }
+  .mmd.error { color: var(--red); text-align: left; }
+  .mmd-err { padding: 18px; font-family: var(--mono); font-size: 0.84rem; line-height: 1.8; }
+  .loading { padding: 60px 10px; color: var(--muted); font-size: 0.86rem; }
+
+  pre.src {
+    display: none; margin: 12px 0 0; padding: 16px; border-radius: 14px; overflow: auto;
+    max-height: 420px; background: rgba(2, 6, 23, 0.7); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.79rem; line-height: 1.75; color: #cfe3ff;
+    white-space: pre; text-align: left;
+  }
+  pre.src.show { display: block; }
+  .fig-note { margin: 10px 2px 0; color: var(--muted); font-size: 0.8rem; line-height: 1.78; }
+  .fig-note b { color: var(--cyan); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 12px 4px; }
+  .legend .item { display: flex; align-items: center; gap: 7px; font-size: 0.77rem; color: var(--muted); }
+  .legend .sw { width: 12px; height: 12px; border-radius: 4px; border: 1.5px solid; }
+
+  /* ---------- 表格 ---------- */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 680px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 0.83rem; line-height: 1.65; }
+  th { color: var(--cyan); font-size: 0.78rem; white-space: nowrap; }
+  tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+  td.mono { font-family: var(--mono); color: var(--amber); white-space: nowrap; }
+  td:first-child { color: var(--text); font-weight: 600; }
+
+  /* ---------- 说明 / 代码 ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card .no {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px;
+    border-radius: 8px; font-family: var(--mono); font-size: 0.74rem; font-weight: 800;
+    color: #08111d; background: linear-gradient(135deg, var(--cyan), var(--purple)); margin-bottom: 10px; padding: 0 6px;
+  }
+  .card h4 { margin: 0 0 8px; font-size: 0.95rem; }
+  .card p { margin: 0; color: var(--muted); font-size: 0.83rem; line-height: 1.75; }
+  .card code { font-family: var(--mono); color: var(--amber); font-size: 0.8rem; }
+  pre.code {
+    margin: 14px 0 0; padding: 16px; border-radius: 14px; overflow-x: auto;
+    background: rgba(2, 6, 23, 0.6); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.8rem; line-height: 1.75; color: #cfe3ff;
+  }
+  pre.code .k { color: #c792ea; } pre.code .f { color: #82aaff; }
+  pre.code .s { color: #c3e88d; } pre.code .n { color: #f78c6c; }
+  pre.code .c { color: #5c6b82; }
+  .local { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+  .local .item { background: rgba(8, 14, 26, 0.6); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; }
+  .local .item .k { font-size: 0.74rem; color: var(--muted); margin-bottom: 6px; }
+  .local .item .v { font-family: var(--mono); font-size: 0.85rem; color: var(--green); word-break: break-all; }
+  .footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 980px) { .stats { grid-template-columns: 1fr 1fr; } .tip-inline { margin-left: 0; } }
+  @media (max-width: 620px) { .hero, .content { padding-left: 18px; padding-right: 18px; } .stats { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">Mmd</div>
+      <div><h1>基于 Mermaid 的智能客服流程图与 ER 图</h1></div>
+    </div>
+    <p class="sub">
+      用 <b>Mermaid 文本语法</b>描述系统，由本地 Mermaid 引擎即时渲染成 <b>SVG 矢量图</b>：
+      <b>图 1</b> 为「在线问答 + 离线知识构建 + 反馈闭环」全流程，<b>图 2</b> 为核心数据实体关系（ER）。
+      图形不是图片，而是可换主题、可换方向、可缩放、可导出、可查看源码的<b>可维护文档</b>。
+    </p>
+    <div class="jumps">
+      <a class="jump" href="18-4.html">← 18-4 ECharts 双图表</a>
+      <a class="jump" href="18-3.html">18-3 SVG 架构图</a>
+      <a class="jump" href="18-2.html">18-2 Canvas 架构图</a>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="stats">
+      <div class="stat"><span class="num">2</span><span class="label">Mermaid 图表（flowchart / erDiagram）</span></div>
+      <div class="stat"><span class="num">v10.9.3</span><span class="label">本地 Mermaid UMD 版本</span></div>
+      <div class="stat"><span class="num">100% 离线</span><span class="label">依赖已下载至 cdn 目录</span></div>
+      <div class="stat"><span class="num">文本即图</span><span class="label">改一行源码即可重绘</span></div>
+    </div>
+
+    <div class="section-title"><h2>全局渲染设置</h2><span class="pill">MERMAID CONFIG</span><span class="line"></span></div>
+    <div class="toolbar">
+      <div class="group"><span class="lb">主题 theme</span>
+        <select id="themeSel">
+          <option value="dark">深色 dark</option>
+          <option value="neutral">浅色 neutral</option>
+          <option value="forest">森林 forest</option>
+          <option value="default">默认 default</option>
+        </select>
+      </div>
+      <div class="group"><span class="lb">流程图方向</span>
+        <select id="flowDir"><option value="TD">上下 TD</option><option value="LR">左右 LR</option></select>
+      </div>
+      <div class="group"><span class="lb">ER 布局</span>
+        <select id="erDir"><option value="TB">上下 TB</option><option value="LR">左右 LR</option></select>
+      </div>
+      <div class="group"><span class="lb">缩放</span>
+        <select id="zoomSel"><option value="75">75%</option><option value="100" selected>100%</option><option value="125">125%</option><option value="150">150%</option></select>
+      </div>
+      <div class="group"><button class="btn primary" id="rerenderBtn">↻ 重新渲染</button></div>
+      <span class="status" id="status">准备中…</span>
+    </div>
+
+    <!-- ===== 图 1 ===== -->
+    <div class="section-title"><h2>图 1 · 智能客服问答处理流程图</h2><span class="pill">FLOWCHART</span><span class="line"></span></div>
+    <div class="legend">
+      <span class="item"><i class="sw" style="background:#12304a;border-color:#67e8f9"></i>在线推理节点</span>
+      <span class="item"><i class="sw" style="background:#33234f;border-color:#a78bfa"></i>判断 / 分支</span>
+      <span class="item"><i class="sw" style="background:#123b30;border-color:#34d399"></i>离线知识构建</span>
+      <span class="item"><i class="sw" style="background:#40202a;border-color:#fb7185"></i>人工兜底</span>
+    </div>
+    <section class="chart-card">
+      <div class="head">
+        <h3><span class="dot"></span>在线问答 + 离线知识构建 + 反馈闭环</h3>
+        <span class="badge">graph / subgraph / classDef</span>
+        <div class="card-tools">
+          <button class="btn" data-src="flow">查看源码</button>
+          <button class="btn" data-export="flow">导出 SVG</button>
+        </div>
+      </div>
+      <div class="mmd-scroll"><div class="mmd" id="mmd-flow"><div class="loading">正在渲染 Mermaid 图…</div></div></div>
+      <pre class="src" id="src-flow"></pre>
+      <p class="fig-note">
+        <b>读图：</b>实线为在线主链路；绿色虚线为离线知识库对检索层的供给；红色链路为低置信度时的人工兜底；
+        反馈经难例挖掘后回流知识库，构成持续学习闭环。菱形为判断节点，虚线框 <code>subgraph</code> 表示离线管线。
+        图较长，可向下滚动查看完整流程，或在全局设置中调整「缩放」与「流程图方向」。
+      </p>
+    </section>
+
+    <!-- ===== 图 2 ===== -->
+    <div class="section-title"><h2>图 2 · 核心数据实体关系图（ER）</h2><span class="pill">ER DIAGRAM</span><span class="line"></span></div>
+    <section class="chart-card">
+      <div class="head">
+        <h3><span class="dot"></span>对话域 · 知识域 · 评估域</h3>
+        <span class="badge">erDiagram / 基数标注 / 属性</span>
+        <div class="card-tools">
+          <button class="btn" data-src="er">查看源码</button>
+          <button class="btn" data-export="er">导出 SVG</button>
+        </div>
+      </div>
+      <div class="mmd-scroll"><div class="mmd" id="mmd-er"><div class="loading">正在渲染 Mermaid 图…</div></div></div>
+      <pre class="src" id="src-er"></pre>
+      <p class="fig-note">
+        <b>读图：</b><code>||</code> 表示「恰好一个」、<code>o|</code>「零或一」、<code>o{</code>「零或多」。
+        例如 <code>USER ||--o{ SESSION</code> 表示「一个用户可发起多个会话，每个会话必属于一个用户」。
+        实体框内第一列为类型、第二列为字段，<code>PK / FK / UK</code> 为主键、外键、唯一键。
+      </p>
+    </section>
+
+    <!-- ===== 实体说明 ===== -->
+    <div class="section-title"><h2>核心实体说明</h2><span class="pill">DATA MODEL</span><span class="line"></span></div>
+    <section class="panel table-wrap" style="background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px">
+      <table>
+        <thead><tr><th>实体</th><th>中文名</th><th>所属域</th><th>关键字段</th><th>说明</th></tr></thead>
+        <tbody id="entityBody"></tbody>
+      </table>
+    </section>
+
+    <!-- ===== 语法速查 ===== -->
+    <div class="section-title"><h2>Mermaid 语法速查</h2><span class="pill">SYNTAX</span><span class="line"></span></div>
+    <div class="cards">
+      <div class="card"><span class="no">1</span><h4>初始化</h4><p><code>mermaid.initialize({ startOnLoad:false, theme:'dark' })</code> 配置全局；<code>mermaid.render(id, src)</code> 返回 SVG 字符串，也可让 <code>mermaid.run()</code> 自动替换页面上的 <code>.mermaid</code> 元素。</p></div>
+      <div class="card"><span class="no">2</span><h4>节点与连线</h4><p><code>A["矩形"]</code>、<code>D{"菱形判断"}</code>、<code>A -- "标签" --&gt; B</code>、<code>A -. "虚线" .-&gt; B</code>；<code>&lt;br/&gt;</code> 在标签内换行。</p></div>
+      <div class="card"><span class="no">3</span><h4>子图与样式</h4><p><code>subgraph KB["离线管线"] … end</code> 划分子系统；<code>classDef</code> 定义配色，<code>class A,B,C online</code> 批量套用。</p></div>
+      <div class="card"><span class="no">4</span><h4>ER 关系基数</h4><p><code>||--o{</code> 一对多、<code>}o--o|</code> 多对零或一、<code>||--||</code> 一对一；关系后用 <code>: "动词"</code> 标注语义。</p></div>
+      <div class="card"><span class="no">5</span><h4>实体属性</h4><p>实体名后跟 <code>{ }</code>，每行「类型 字段名 约束 "注释"」；约束支持 <code>PK</code> / <code>FK</code> / <code>UK</code>。</p></div>
+      <div class="card"><span class="no">6</span><h4>重绘与导出</h4><p>改配置后重新 <code>render()</code> 并注入 SVG；多图重绘要串行执行（Mermaid 渲染过程不可重入）。生成的 SVG 可直接 <code>XMLSerializer</code> 导出。</p></div>
+    </div>
+
+    <pre class="code"><span class="c">// ① 引入本地 UMD 构建（离线可用，提供全局 mermaid 对象）</span>
+&lt;script src=<span class="s">"./cdn/mermaid/mermaid.min.js"</span>&gt;&lt;/script&gt;
+
+<span class="c">// ② 初始化配置</span>
+mermaid.<span class="f">initialize</span>({
+  startOnLoad: <span class="k">false</span>,
+  theme: <span class="s">'dark'</span>,
+  securityLevel: <span class="s">'loose'</span>,
+  flowchart: { htmlLabels: <span class="k">true</span>, curve: <span class="s">'basis'</span> },
+  er: { layoutDirection: <span class="s">'TB'</span> }
+});
+
+<span class="c">// ③ 图 1：流程图（源码写在 .mermaid 元素的文本里）</span>
+&lt;div class=<span class="s">"mermaid"</span>&gt;
+graph TD
+  U[<span class="s">"用户提问"</span>] --&gt; I[<span class="s">"意图识别"</span>]
+  I --&gt; D{<span class="s">"信息充分?"</span>}
+  D -- <span class="s">"否"</span> --&gt; Q[<span class="s">"澄清追问"</span>]
+  Q --&gt; U
+  D -- <span class="s">"是"</span> --&gt; R[<span class="s">"混合检索"</span>]
+  subgraph KB[<span class="s">"离线知识构建"</span>]
+    K1[<span class="s">"多源语料"</span>] --&gt; K2[<span class="s">"解析/分块"</span>] --&gt; K3[<span class="s">"混合索引"</span>]
+  end
+  K3 -. <span class="s">"知识供给"</span> .-&gt; R
+  classDef online fill:<span class="n">#12304a</span>,stroke:<span class="n">#67e8f9</span>,color:<span class="n">#e5eefc</span>;
+  class U,I,R online;
+&lt;/div&gt;
+
+<span class="c">// ④ 图 2：ER 图</span>
+&lt;div class=<span class="s">"mermaid"</span>&gt;
+erDiagram
+  USER ||--o{ SESSION : <span class="s">"发起"</span>
+  SESSION ||--o{ MESSAGE : <span class="s">"包含"</span>
+  MESSAGE ||--o| ANSWER : <span class="s">"触发"</span>
+  USER {
+    bigint user_id PK
+    bigint tenant_id FK
+    string nickname
+  }
+&lt;/div&gt;
+
+<span class="c">// ⑤ 方式 A：自动把 .mermaid 元素替换为 SVG</span>
+<span class="k">await</span> mermaid.<span class="f">run</span>({ querySelector: <span class="s">'.mermaid'</span> });
+
+<span class="c">// ⑤ 方式 B（本页采用）：显式渲染，便于多图重绘与导出</span>
+<span class="k">const</span> { svg } = <span class="k">await</span> mermaid.<span class="f">render</span>(<span class="s">'diagram-1'</span>, sourceText);
+host.<span class="f">innerHTML</span> = svg;</pre>
+
+    <div class="local">
+      <div class="item"><div class="k">本地脚本</div><div class="v">./cdn/mermaid/mermaid.min.js</div></div>
+      <div class="item"><div class="k">版本 / 许可证</div><div class="v">10.9.3 · MIT</div></div>
+      <div class="item"><div class="k">许可证文件</div><div class="v">./cdn/mermaid/LICENSE</div></div>
+      <div class="item"><div class="k">构建形式 / 大小</div><div class="v">UMD · ≈ 3.34 MB</div></div>
+    </div>
+
+    <div class="footer">© 2026 高级网页设计课堂实践 · 18-6 Mermaid 流程图与 ER 图 · 朱泊旭</div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   18-6 Mermaid 10.9.3 · 智能客服系统流程图与 ER 图
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+if (typeof mermaid === 'undefined') {
+  ['mmd-flow', 'mmd-er'].forEach(id => {
+    $(id).innerHTML = '<div class="mmd-err">未加载 Mermaid：请确认 <code>./cdn/mermaid/mermaid.min.js</code> 存在。</div>';
+  });
+  $('status').textContent = '依赖缺失';
+  $('status').className = 'status err';
+  throw new Error('mermaid.min.js not loaded');
+}
+
+/* ---------- 图源码（文本即图，改这里即可重绘） ---------- */
+const FLOW_BODY = `
+  U["用户提问<br/>文本 / 语音 / 图片"] --> C["渠道接入<br/>协议规范化"]
+  C --> S["会话状态跟踪 DST"]
+  S --> I["意图识别<br/>与槽位填充"]
+  I --> D{"信息是否充分?"}
+  D -- "否" --> Q["发起澄清追问"]
+  Q --> U
+  D -- "是" --> RW["多轮 Query 改写与消歧"]
+  RW --> R["混合检索调度"]
+  R --> F["BM25 稀疏 + 稠密向量召回<br/>RRF 动态融合"]
+  F --> RR["Cross-Encoder 重排 Top-K"]
+  RR --> G{"证据置信度 ≥ 阈值?"}
+  G -- "偏低" --> R2["改写后二次检索"]
+  R2 --> R
+  G -- "仍不足" --> H["转人工坐席"]
+  G -- "充足" --> P["证据注入 Prompt 构造"]
+  P --> L["LLM 流式生成"]
+  L --> V["引用溯源<br/>与陈述级归因"]
+  V --> V2{"存在无依据陈述?"}
+  V2 -- "是" --> REG["自洽校验 / 二次生成"]
+  REG --> L
+  V2 -- "否" --> SAFE["安全过滤 / 合规脱敏"]
+  SAFE --> ANS["返回带引用的回答"]
+  ANS --> FB["用户反馈与隐式信号"]
+  FB --> MINE["难例挖掘与标注"]
+  MINE -. "增量更新" .-> K1
+  H --> T["工单沉淀"]
+  T -. "知识回写" .-> K1
+
+  subgraph KB["离线知识构建管线"]
+    direction TB
+    K1["多源语料<br/>FAQ / 工单 / 手册"] --> K2["解析 · 版面还原<br/>语义分块"]
+    K2 --> K3["Embedding · 实体抽取<br/>QA 对生成"]
+    K3 --> K4["向量库 + 倒排索引<br/>+ 知识图谱"]
+  end
+  K4 -. "知识索引供给" .-> R
+
+  classDef online fill:#12304a,stroke:#67e8f9,stroke-width:1.5px,color:#e5eefc;
+  classDef decision fill:#33234f,stroke:#a78bfa,stroke-width:1.5px,color:#e5eefc;
+  classDef offline fill:#123b30,stroke:#34d399,stroke-width:1.5px,color:#e5eefc;
+  classDef human fill:#40202a,stroke:#fb7185,stroke-width:1.5px,color:#e5eefc;
+  class U,C,S,I,RW,R,F,RR,P,L,V,SAFE,ANS,FB,MINE online;
+  class D,G,V2 decision;
+  class K1,K2,K3,K4 offline;
+  class H,T human;
+`;
+
+const ER_BODY = `
+  TENANT ||--o{ USER : "容纳"
+  TENANT ||--o{ KNOWLEDGE_DOC : "拥有"
+  USER ||--o{ SESSION : "发起"
+  CHANNEL ||--o{ SESSION : "接入"
+  SESSION ||--o{ MESSAGE : "包含"
+  SESSION ||--o| TICKET : "可转人工"
+  AGENT ||--o{ TICKET : "处理"
+  MESSAGE }o--|| INTENT : "识别为"
+  MESSAGE ||--o| ANSWER : "触发"
+  ANSWER ||--o{ CITATION : "引用"
+  KNOWLEDGE_DOC ||--o{ KNOWLEDGE_CHUNK : "切分为"
+  KNOWLEDGE_CHUNK ||--o{ CITATION : "作为证据"
+  ANSWER ||--o| FEEDBACK : "收到"
+  FEEDBACK }o--o| EVAL_SAMPLE : "沉淀为"
+
+  TENANT {
+    bigint tenant_id PK
+    string tenant_name
+    string status
+    datetime created_at
+  }
+  CHANNEL {
+    bigint channel_id PK
+    string channel_code UK
+    string channel_name
+  }
+  USER {
+    bigint user_id PK
+    bigint tenant_id FK
+    string nickname
+    string phone_enc
+    datetime created_at
+  }
+  SESSION {
+    bigint session_id PK
+    bigint user_id FK
+    bigint channel_id FK
+    string state_json
+    datetime started_at
+  }
+  MESSAGE {
+    bigint message_id PK
+    bigint session_id FK
+    string role
+    text content
+    datetime sent_at
+  }
+  INTENT {
+    bigint intent_id PK
+    string intent_code UK
+    string intent_name
+    decimal confidence
+  }
+  ANSWER {
+    bigint answer_id PK
+    bigint message_id FK
+    text content
+    decimal faithfulness
+    int latency_ms
+  }
+  CITATION {
+    bigint citation_id PK
+    bigint answer_id FK
+    bigint chunk_id FK
+    int evidence_no
+  }
+  KNOWLEDGE_DOC {
+    bigint doc_id PK
+    bigint tenant_id FK
+    string title
+    string version
+    string status
+  }
+  KNOWLEDGE_CHUNK {
+    bigint chunk_id PK
+    bigint doc_id FK
+    text content
+    string vector_id UK
+  }
+  FEEDBACK {
+    bigint feedback_id PK
+    bigint answer_id FK
+    int rating
+    boolean transferred
+  }
+  EVAL_SAMPLE {
+    bigint sample_id PK
+    bigint answer_id FK
+    string gold_answer
+    boolean is_hard_case
+  }
+  TICKET {
+    bigint ticket_id PK
+    bigint session_id FK
+    bigint agent_id FK
+    string status
+  }
+  AGENT {
+    bigint agent_id PK
+    string agent_name
+    string skill_group
+  }
+`;
+
+const DIAGRAMS = {
+  flow: { build: () => 'graph ' + $('flowDir').value + '\n' + FLOW_BODY, file: '18-6-智能客服流程图.svg' },
+  er:   { build: () => 'erDiagram\n' + ER_BODY, file: '18-6-智能客服ER图.svg' }
+};
+
+/* ---------- 实体说明表 ---------- */
+const ENTITIES = [
+  ['TENANT', '租户', '公共域', 'tenant_id PK', '多租户隔离的基本单位，知识空间与配额按租户划分'],
+  ['CHANNEL', '接入渠道', '公共域', 'channel_id PK / channel_code UK', 'Web、小程序、语音、OpenAPI 等接入来源'],
+  ['USER', '用户', '对话域', 'user_id PK / tenant_id FK', '终端用户主数据，敏感信息加密存储'],
+  ['SESSION', '会话', '对话域', 'session_id PK / user_id FK', '一次连续对话，保存 DST 状态与上下文快照'],
+  ['MESSAGE', '消息', '对话域', 'message_id PK / session_id FK', '用户提问与系统回复的逐条记录'],
+  ['INTENT', '意图', '对话域', 'intent_id PK / intent_code UK', '意图字典与识别置信度，支撑路由与统计'],
+  ['ANSWER', '回答', '生成域', 'answer_id PK / message_id FK', '生成结果、事实一致性得分与响应延迟'],
+  ['KNOWLEDGE_DOC', '知识文档', '知识域', 'doc_id PK / tenant_id FK', 'FAQ、手册、政策文件等原始知识及其版本'],
+  ['KNOWLEDGE_CHUNK', '知识片段', '知识域', 'chunk_id PK / doc_id FK', '语义分块后的检索单元，关联向量索引 ID'],
+  ['CITATION', '证据引用', '生成域', 'citation_id PK / answer_id FK / chunk_id FK', '回答与证据片段的归因关系，实现可溯源'],
+  ['FEEDBACK', '用户反馈', '评估域', 'feedback_id PK / answer_id FK', '点赞、评分与转人工等显式 / 隐式信号'],
+  ['EVAL_SAMPLE', '评测样本', '评估域', 'sample_id PK / answer_id FK', '人工标注的 Gold Set 与难例样本'],
+  ['TICKET', '人工工单', '服务域', 'ticket_id PK / session_id FK / agent_id FK', '低置信度或用户请求时的人工兜底记录'],
+  ['AGENT', '客服坐席', '服务域', 'agent_id PK', '人工坐席与技能组，处理转人工工单']
+];
+$('entityBody').innerHTML = ENTITIES.map(e =>
+  '<tr><td class="mono">' + e[0] + '</td><td>' + e[1] + '</td><td>' + e[2] +
+  '</td><td class="mono">' + e[3] + '</td><td>' + e[4] + '</td></tr>').join('');
+
+/* ---------- 渲染 ---------- */
+const state = { theme: 'dark', zoom: 100 };
+
+function config() {
+  return {
+    startOnLoad: false,
+    theme: state.theme,
+    securityLevel: 'loose',
+    themeVariables: {
+      fontFamily: '"Microsoft YaHei","PingFang SC",sans-serif',
+      fontSize: '14px',
+      primaryColor: '#1b2942',
+      primaryTextColor: '#e5eefc',
+      primaryBorderColor: '#67e8f9',
+      lineColor: '#7f97b4',
+      textColor: '#e5eefc'
+    },
+    flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: false, nodeSpacing: 28, rankSpacing: 34 },
+    er: { layoutDirection: $('erDir').value, useMaxWidth: false, diagramPadding: 18, minEntityWidth: 130, entityPadding: 12 }
+  };
+}
+
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function applyView(key) {
+  const svg = $('mmd-' + key).querySelector('svg');
+  if (!svg) return;
+  svg.style.width = state.zoom + '%';
+  svg.style.height = 'auto';
+  svg.style.maxWidth = 'none';
+  svg.style.display = 'block';
+  svg.style.margin = '0 auto';
+}
+
+let svgSeq = 0;
+async function renderOne(key) {
+  const el = $('mmd-' + key);
+  const src = DIAGRAMS[key].build();
+  el.classList.remove('error');
+  $('src-' + key).textContent = src;
+  try {
+    // 用 render() 显式生成 SVG，避免 run() 的 DOM 状态在多图重绘时互相干扰
+    const id = 'mmd-svg-' + key + '-' + (++svgSeq);
+    let out;
+    if (typeof mermaid.render === 'function') out = await mermaid.render(id, src);
+    else {
+      el.removeAttribute('data-processed');
+      el.textContent = src;
+      await mermaid.run({ querySelector: '#mmd-' + key });
+      applyView(key);
+      return true;
+    }
+    el.innerHTML = out.svg;
+    if (out.bindFunctions) out.bindFunctions(el);
+    // 清理 Mermaid 用于测量文本而可能残留的临时节点
+    document.querySelectorAll('body > div[id^="dmmd-svg-"]').forEach(n => n.remove());
+    applyView(key);
+    return true;
+  } catch (err) {
+    el.classList.add('error');
+    el.innerHTML = '<div class="mmd-err">Mermaid 渲染失败：' + esc(err && err.message ? err.message : err) + '</div>';
+    return false;
+  }
+}
+
+// Mermaid.run() 不可重入：用串行队列避免连续切换配置时两个渲染过程互相干扰
+let rendering = false, pending = false;
+async function renderAll() {
+  if (rendering) { pending = true; return; }
+  rendering = true;
+  try {
+    do {
+      pending = false;
+      $('status').textContent = '渲染中…';
+      $('status').className = 'status';
+      mermaid.initialize(config());
+      const a = await renderOne('flow');
+      const b = await renderOne('er');
+      $('status').textContent = (a && b) ? '✓ 两张图已渲染' : '部分图渲染失败';
+      $('status').className = 'status ' + (a && b ? 'ok' : 'err');
+    } while (pending);
+  } finally {
+    rendering = false;
+  }
+}
+
+/* ---------- 导出 SVG ---------- */
+function exportSvg(key) {
+  const svg = $('mmd-' + key).querySelector('svg');
+  if (!svg) { alert('图表尚未渲染完成'); return; }
+  const clone = svg.cloneNode(true);
+  const vb = (clone.getAttribute('viewBox') || '0 0 1200 800').split(/\s+/);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  clone.setAttribute('width', vb[2] || '1200');
+  clone.setAttribute('height', vb[3] || '800');
+  clone.style.width = ''; clone.style.height = ''; clone.style.maxWidth = '';
+  const out = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + out], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = DIAGRAMS[key].file; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+/* ---------- 控件 ---------- */
+$('themeSel').onchange = e => { state.theme = e.target.value; renderAll(); };
+$('flowDir').onchange = () => renderAll();
+$('erDir').onchange = () => renderAll();
+$('zoomSel').onchange = e => { state.zoom = Number(e.target.value); applyView('flow'); applyView('er'); };
+$('rerenderBtn').onclick = () => renderAll();
+
+document.querySelectorAll('[data-src]').forEach(btn => {
+  btn.onclick = () => {
+    const pre = $('src-' + btn.dataset.src);
+    const show = !pre.classList.contains('show');
+    pre.classList.toggle('show', show);
+    btn.textContent = show ? '隐藏源码' : '查看源码';
+  };
+});
+document.querySelectorAll('[data-export]').forEach(btn => {
+  btn.onclick = () => exportSvg(btn.dataset.export);
+});
+
+/* ---------- 初始化（支持 #theme=dark&dir=LR&er=TB 直达） ---------- */
+const qs = new URLSearchParams(location.hash.slice(1));
+const qTheme = qs.get('theme'), qDir = qs.get('dir'), qEr = qs.get('er');
+if (qTheme && ['dark', 'neutral', 'forest', 'default'].indexOf(qTheme) >= 0) {
+  state.theme = qTheme; $('themeSel').value = qTheme;
+}
+if (qDir && ['TD', 'LR'].indexOf(qDir) >= 0) $('flowDir').value = qDir;
+if (qEr && ['TB', 'LR'].indexOf(qEr) >= 0) $('erDir').value = qEr;
+renderAll();
+</script>
+</body>
+</html>
